@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milestone — Monitoring Project Akhir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  /* ============ TOKENS ============ */
+  :root{
+    --primary:#0245EC; --primary-light:#E5ECFE; --primary-soft:#F2F6FF; --primary-dark:#011C5E;
+    --primary-ink:#0245EC; --seg-half:color-mix(in srgb, var(--primary) 32%, var(--surface));
+    --accent:#D9FF3A; --accent-light:#F0FFB0; --accent-dark:#576617;
+    --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#F1F3F6;
+    --border:#E2E5EA; --border-strong:#CBD0D8;
+    --text:#0B0F14; --text-2:#5D6470; --text-3:#8A9099;
+    --success:#16A34A; --success-bg:#DCFCE7;
+    --warning:#F59E0B; --warning-bg:#FEF3C7;
+    --danger:#DC2626;  --danger-bg:#FEE2E2;
+    --info:#0EA5E9;    --info-bg:#E0F2FE;
+    --neutral:#64748B; --neutral-bg:#F1F5F9;
+    --track:#E5E7EB; --grid:rgba(11,15,20,.045);
+  }
+  [data-theme="dark"]{
+    --primary-light:rgba(2,69,236,.22); --primary-soft:rgba(2,69,236,.12); --primary-ink:#7E9CFF;
+    --bg:#080B12; --surface:#10141C; --surface-2:#181D27;
+    --border:#272D38; --border-strong:#3A4250;
+    --text:#F5F7FA; --text-2:#A8AFBA; --text-3:#737B88;
+    --success-bg:rgba(22,163,74,.15); --warning-bg:rgba(245,158,11,.15);
+    --danger-bg:rgba(220,38,38,.16); --info-bg:rgba(14,165,233,.15);
+    --neutral-bg:rgba(100,116,139,.18); --track:#232A36; --grid:rgba(255,255,255,.05);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  input,select,textarea{font:inherit;color:inherit}
+  :focus-visible{outline:2px solid var(--primary-ink);outline-offset:2px;border-radius:6px}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:8px;border:3px solid var(--surface)}
+  .mono{font-family:'JetBrains Mono',monospace}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif}
+  .ti{font-size:18px;line-height:1;flex:none}
+
+  /* ============ LAYOUT ============ */
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:258px;flex:none;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;gap:26px;padding:20px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{position:sticky;top:0;z-index:60;background:var(--surface);border-bottom:1px solid var(--border);min-height:64px;display:flex;align-items:center;gap:16px;padding:10px 28px}
+  .content{flex:1;padding:28px 32px 56px;max-width:1240px;width:100%;margin:0 auto}
+
+  /* ============ SIDEBAR ============ */
+  .brand{display:flex;align-items:center;gap:11px;padding:0 8px}
+  .brand-mark{width:38px;height:38px;border-radius:10px;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none}
+  .brand-mark .ti{font-size:21px}
+  .brand-text strong{font-family:'Space Grotesk';font-size:17px;font-weight:700;display:block;line-height:1.15;letter-spacing:-.01em}
+  .brand-text span{font-size:11px;color:var(--text-3)}
+  .nav{display:flex;flex-direction:column;gap:4px}
+  .nav-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 12px;margin-bottom:4px}
+  .nav-item{position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:var(--text-2);font-weight:500;font-size:14px;transition:background .15s,color .15s;text-align:left;width:100%}
+  .nav-item .ti{font-size:19px}
+  .nav-item:hover{background:var(--surface-2);color:var(--text)}
+  .nav-item.active{background:var(--primary-light);color:var(--primary-ink);font-weight:600}
+  .nav-item.active::before{content:'';position:absolute;left:-16px;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:2px;background:var(--accent)}
+  .nav-badge{margin-left:auto;font-style:normal;font-size:11px;font-weight:600;background:var(--surface-2);color:var(--text-2);border-radius:99px;padding:2px 8px}
+  .nav-item.active .nav-badge{background:var(--primary);color:#fff}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+  .side-profile{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:11px 12px}
+  .avatar{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:12.5px;flex:none}
+  .side-profile .avatar{background:var(--primary-soft);color:var(--primary-ink)}
+  .sp-info{min-width:0;flex:1}
+  .sp-info strong{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sp-info span{font-size:11px;color:var(--text-3)}
+  .logout:hover{background:var(--danger-bg);color:var(--danger)}
+
+  /* ============ TOPBAR ============ */
+  .search-wrap{position:relative;width:min(380px,100%)}
+  .search{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 12px;transition:border-color .15s,box-shadow .15s}
+  .search:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+  .search>.ti{color:var(--text-3);font-size:16px}
+  .search input{border:none;outline:none;background:none;flex:1;font-size:14px;min-width:0}
+  .search input::placeholder{color:var(--text-3)}
+  .search kbd{font-family:'JetBrains Mono';font-size:11px;color:var(--text-3);border:1px solid var(--border);border-radius:6px;padding:1px 6px;background:var(--surface)}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:4px}
+  .icon-btn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--text-2);transition:background .15s,color .15s;position:relative;flex:none}
+  .icon-btn:hover{background:var(--surface-2);color:var(--text)}
+  .icon-btn .ti{font-size:19px}
+  .dot-badge{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:99px;background:var(--accent);border:2px solid var(--surface)}
+  .v-divider{width:1px;height:26px;background:var(--border);margin:0 10px}
+  .user-chip{display:flex;align-items:center;gap:10px}
+  .avatar-user{background:var(--primary);color:#fff}
+  .user-name strong{display:block;font-size:13px;line-height:1.2}
+  .user-name span{font-size:11px;color:var(--text-3)}
+
+  /* Dropdown */
+  .dd-anchor{position:relative}
+  .dd-anchor .dropdown{display:none}
+  .dd-anchor.open .dropdown{display:block}
+  .dropdown{position:absolute;top:calc(100% + 10px);right:0;width:340px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 32px rgba(8,11,18,.12);z-index:90;overflow:hidden;animation:pop .18s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px) scale(.98)}}
+  .dd-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;border-bottom:1px solid var(--border)}
+  .dd-head strong{font-size:14px}
+  .link-btn{font-size:12.5px;font-weight:600;color:var(--primary-ink)}
+  .dd-list{max-height:330px;overflow-y:auto;padding:6px 0}
+  .notif-item{display:flex;gap:12px;padding:12px 16px;cursor:pointer;transition:background .15s}
+  .notif-item:hover{background:var(--surface-2)}
+  .notif-item.unread{background:var(--primary-soft)}
+  .notif-item.unread:hover{background:var(--primary-light)}
+  .ni-body{flex:1;min-width:0}
+  .ni-title{font-size:13.5px;font-weight:600}
+  .ni-msg{font-size:12.5px;color:var(--text-2)}
+  .ni-time{font-size:11.5px;color:var(--text-3);margin-top:2px}
+  .ni-dot{width:8px;height:8px;border-radius:99px;background:var(--primary);flex:none;margin-top:6px}
+
+  /* Search panel */
+  .search-panel{display:none;position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 40px rgba(8,11,18,.14);z-index:90;overflow:hidden;animation:pop .16s ease;max-height:400px;overflow-y:auto}
+  .search-wrap.open .search-panel{display:block}
+  .sp-group{padding:10px 14px 4px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);font-weight:600}
+  .sp-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:13.5px}
+  .sp-item:hover{background:var(--primary-soft)}
+  .sp-item>.ti{color:var(--text-3);font-size:17px}
+  .sp-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sp-empty{padding:20px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* ============ UMUM ============ */
+  .view{display:none}
+  .view.active{display:block;animation:viewIn .28s ease}
+  @keyframes viewIn{from{opacity:0;transform:translateY(10px)}}
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .page-head h1{font-size:26px;font-weight:700;letter-spacing:-.015em}
+  .page-sub{color:var(--text-2);font-size:14px;margin-top:4px}
+  .page-sub b{color:var(--text)}
+  .page-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;border:1px solid transparent;transition:filter .15s,background .15s,border-color .15s,color .15s}
+  .btn .ti{font-size:16px}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{filter:brightness(1.12)}
+  .btn-accent{background:var(--accent);color:#0B0F14}
+  .btn-accent:hover{filter:brightness(.95)}
+  .btn-outline{background:var(--surface);border-color:var(--border)}
+  .btn-outline:hover{border-color:var(--border-strong);background:var(--surface-2)}
+  .btn-ghost{color:var(--text-2)}
+  .btn-ghost:hover{background:var(--surface-2);color:var(--text)}
+  .btn-link{color:var(--primary-ink)}
+  .btn-danger{background:var(--danger);color:#fff}
+  .btn-danger:hover{filter:brightness(1.08)}
+  .btn-sm{padding:6px 12px;font-size:13px;border-radius:8px}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px}
+  .card-head{padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-head h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+  .card-body{padding:0 20px 20px}
+  .card-body.flush{padding:0 0 8px}
+
+  .tile{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none}
+  .tile .ti{font-size:19px}
+  .tile-primary{background:var(--primary-light);color:var(--primary-ink)}
+  .tile-success{background:var(--success-bg);color:var(--success)}
+  .tile-warning{background:var(--warning-bg);color:var(--warning)}
+  .tile-danger{background:var(--danger-bg);color:var(--danger)}
+  .tile-info{background:var(--info-bg);color:var(--info)}
+  .tile-neutral{background:var(--neutral-bg);color:var(--neutral)}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;line-height:1.5;white-space:nowrap}
+  .badge::before{content:'';width:6px;height:6px;border-radius:99px;background:currentColor;flex:none}
+  .badge-primary{background:var(--primary-light);color:var(--primary-ink)}
+  .badge-success{background:var(--success-bg);color:var(--success)}
+  .badge-warning{background:var(--warning-bg);color:var(--warning)}
+  .badge-danger{background:var(--danger-bg);color:var(--danger)}
+  .badge-neutral{background:var(--neutral-bg);color:var(--neutral)}
+  .badge-accent{background:var(--accent);color:#0B0F14}
+
+  .stack{display:flex;flex-direction:column;gap:8px}
+  .empty{padding:38px 20px;text-align:center;color:var(--text-3);font-size:13.5px}
+  .empty .ti{font-size:30px;display:block;margin:0 auto 8px}
+  .micro{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);font-weight:600}
+
+  /* ============ HERO ============ */
+  .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:36px;padding:28px;margin-bottom:20px;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px;mask-image:radial-gradient(120% 140% at 85% 20%,#000 20%,transparent 70%);-webkit-mask-image:radial-gradient(120% 140% at 85% 20%,#000 20%,transparent 70%)}
+  .hero>*{position:relative}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin-bottom:10px}
+  .thesis{font-size:22px;line-height:1.35;font-weight:700;letter-spacing:-.012em;max-width:560px}
+  .thesis-meta{margin-top:10px;color:var(--text-2);font-size:13.5px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .thesis-meta .ti{font-size:16px;color:var(--text-3)}
+  .thesis-meta b{color:var(--text);font-weight:600}
+  .phase-block{margin-top:28px}
+  .phase-bar,.stacked{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--track);gap:2px}
+  .stacked{height:12px;border-radius:7px}
+  .seg{height:100%}
+  .seg-done{background:var(--primary)}
+  .seg-half{background:var(--seg-half)}
+  .phase-legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px}
+  .pl-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)}
+  .pl-swatch{width:10px;height:10px;border-radius:3px;background:var(--track)}
+  .pl-item b{font-family:'JetBrains Mono';font-size:12px;color:var(--text);font-weight:600}
+  .pl-status{font-size:11.5px;color:var(--text-3)}
+  .hero-right{display:flex;flex-direction:column;align-items:center;gap:18px;width:216px}
+  .ring-wrap{position:relative;width:212px;height:212px}
+  .ring-wrap svg{width:100%;height:100%;display:block}
+  .tick{stroke:var(--track);stroke-width:3.2;stroke-linecap:round;transition:stroke .3s}
+  .tick.on{stroke:var(--primary)}
+  .tick.edge{stroke:var(--accent)}
+  .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring-num{font-family:'Space Grotesk';font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .ring-num em{font-style:normal;font-size:20px;color:var(--text-3);font-weight:600;margin-left:2px}
+  .ring-cap{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);font-weight:600;margin-top:6px}
+  .deadline-card{display:flex;gap:12px;align-items:center;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;width:100%}
+  .deadline-title{font-size:13.5px;font-weight:600;line-height:1.3}
+  .countdown{font-size:13.5px;font-weight:600;color:var(--primary-ink);font-variant-numeric:tabular-nums;margin-top:2px}
+
+  /* ============ KPI ============ */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:20px}
+  .kpi{padding:20px 24px;display:flex;flex-direction:column;gap:7px;min-width:0}
+  .kpi + .kpi{border-left:1px solid var(--border)}
+  .kpi-label{font-size:12.5px;color:var(--text-2);font-weight:500;display:flex;gap:7px;align-items:center}
+  .kpi-label .ti{font-size:16px;color:var(--text-3)}
+  .kpi-value{font-family:'Space Grotesk';font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1.1;display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+  .kpi-value small{font-size:16px;color:var(--text-3);font-weight:600}
+  .kpi-value .badge{font-size:14px;padding:6px 12px}
+  .kpi-sub{font-size:12px;color:var(--text-3)}
+  .kpi-bar{height:6px;border-radius:4px;background:var(--track);overflow:hidden;margin-top:4px}
+  .kpi-bar i{display:block;height:100%;width:0;background:var(--primary);border-radius:4px;transition:width .9s cubic-bezier(.22,1,.36,1)}
+
+  .grid-2{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start;margin-bottom:20px}
+  .col{display:flex;flex-direction:column;gap:20px}
+
+  /* ============ BARIS TARGET / LAPORAN ============ */
+  .row-item{display:flex;align-items:center;gap:14px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:background .15s,border-color .15s}
+  .row-item:hover{background:var(--primary-soft);border-color:var(--border-strong)}
+  .row-item[data-action]{cursor:pointer}
+  .t-idx{font-size:12px;color:var(--text-3);width:22px;flex:none}
+  .t-main{flex:1;min-width:0}
+  .t-title{font-size:14px;font-weight:600;line-height:1.3}
+  .t-sub{display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:500;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:2px 7px}
+  .weight{font-size:11.5px;color:var(--text-3)}
+  .t-due{width:92px;flex:none}
+  .t-due .d1{font-family:'JetBrains Mono';font-size:12.5px;font-weight:500;color:var(--text-2)}
+  .t-due .d2{font-size:11.5px;color:var(--text-3)}
+  .t-due.soon .d2{color:var(--warning);font-weight:600}
+  .t-action{flex:none;min-width:92px;display:flex;justify-content:flex-end}
+  .done-mark{color:var(--success);display:grid;place-items:center}
+  .done-mark .ti{font-size:20px}
+  .chev{color:var(--text-3);font-size:17px;flex:none}
+  @keyframes flashRow{0%,55%{background:var(--primary-soft)}100%{background:transparent}}
+  .flash{animation:flashRow 2s ease both}
+
+  /* Chips */
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:500;color:var(--text-2);transition:all .15s;display:flex;gap:7px;align-items:center}
+  .chip:hover{border-color:var(--border-strong);color:var(--text)}
+  .chip.active{background:var(--primary-light);border-color:transparent;color:var(--primary-ink);font-weight:600}
+  .chip b{font-weight:600;font-size:12px;opacity:.7}
+  .sum-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--text-2)}
+  .sum-legend span{display:flex;align-items:center;gap:7px}
+  .sum-legend i{width:10px;height:10px;border-radius:3px}
+  .sum-legend b{color:var(--text);font-family:'JetBrains Mono';font-size:12px}
+  .foot-note{font-size:12px;color:var(--text-3);margin-top:14px;display:flex;gap:7px;align-items:center}
+  .foot-note .ti{font-size:15px}
+
+  /* Aktivitas */
+  .act{display:flex;gap:12px;padding:12px 20px;align-items:flex-start}
+  .act + .act{border-top:1px solid var(--border)}
+  .act-dot{width:8px;height:8px;border-radius:99px;margin-top:7px;flex:none}
+  .act-body{flex:1;min-width:0}
+  .act-title{font-size:13.5px;line-height:1.45}
+  .act-title b{font-weight:600}
+  .act-time{font-size:11.5px;color:var(--text-3);margin-top:2px}
+  .quote{border-left:3px solid var(--primary);background:var(--primary-soft);border-radius:0 10px 10px 0;padding:12px 14px;font-size:13.5px;color:var(--text-2);line-height:1.6}
+  .eval-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .eval-foot{font-size:12.5px;color:var(--text-3);margin-top:12px}
+
+  /* Timeline jadwal */
+  .tl-item{position:relative;display:flex;gap:14px;padding-bottom:26px}
+  .tl-item::before{content:'';position:absolute;left:5px;top:18px;bottom:0;width:2px;background:var(--border)}
+  .tl-item:last-child{padding-bottom:4px}
+  .tl-item:last-child::before{display:none}
+  .tl-dot{width:12px;height:12px;border-radius:99px;border:3px solid var(--border-strong);background:var(--surface);flex:none;margin-top:4px;position:relative;z-index:1}
+  .tl-item.done .tl-dot{background:var(--success);border-color:var(--success)}
+  .tl-item.next .tl-dot{background:var(--primary);border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-light)}
+  .tl-date{font-family:'JetBrains Mono';font-size:12px;color:var(--text-3)}
+  .tl-title{font-family:'Space Grotesk';font-size:14.5px;font-weight:600;margin:2px 0 2px}
+  .tl-item.next .tl-title{color:var(--primary-ink)}
+  .tl-desc{font-size:13px;color:var(--text-2)}
+  .center-col{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:6px 20px 20px}
+  .sidang-cd{font-size:23px;font-weight:600;color:var(--primary-ink);font-variant-numeric:tabular-nums}
+  .side-info{display:flex;gap:12px;align-items:flex-start}
+  .side-info-txt strong{font-size:14px;display:block}
+  .side-info-txt span{font-size:12.5px;color:var(--text-2)}
+  .side-line{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);margin-top:14px;padding-top:12px;font-size:13px;color:var(--text-2)}
+
+  /* ============ TOAST ============ */
+  #toasts{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:10px;z-index:300}
+  .toast{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;box-shadow:0 12px 32px rgba(8,11,18,.14);min-width:280px;max-width:380px;animation:toastIn .3s cubic-bezier(.21,1.02,.55,1.15)}
+  .toast.out{animation:toastOut .25s forwards}
+  @keyframes toastIn{from{opacity:0;transform:translateY(14px)}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+  .toast .tile{width:32px;height:32px}
+  .toast .tile .ti{font-size:17px}
+  .toast-title{font-size:13.5px;font-weight:600}
+  .toast-msg{font-size:12.5px;color:var(--text-2);margin-top:1px}
+
+  /* ============ MODAL ============ */
+  .overlay{position:fixed;inset:0;background:rgba(8,11,18,.55);z-index:200;display:grid;place-items:center;padding:20px;animation:fadeIn .2s}
+  @keyframes fadeIn{from{opacity:0}}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:min(540px,100%);padding:26px;animation:modalIn .28s cubic-bezier(.22,1,.36,1);max-height:88vh;overflow-y:auto}
+  @keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.97)}}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+  .modal-head h3{font-size:19px;font-weight:700}
+  .modal-sub{font-size:13.5px;color:var(--text-2);margin:6px 0 20px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s;font-size:14px}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+  .field textarea{resize:vertical;min-height:90px}
+  .field .err{color:var(--danger);font-size:12px;margin-top:5px;display:none}
+  .field.invalid input,.field.invalid textarea{border-color:var(--danger)}
+  .field.invalid .err{display:block}
+  .file-row{display:flex;gap:10px;align-items:center}
+  .file-name{font-size:12px;color:var(--text-3)}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+  .mini-label{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin:18px 0 8px}
+  .steps{margin:4px 0 4px}
+  .step{display:flex;gap:14px}
+  .step-rail{display:flex;flex-direction:column;align-items:center;align-self:stretch}
+  .step:not(:last-child) .step-rail::after{content:'';flex:1;width:2px;background:var(--border);margin:4px 0}
+  .step-dot{width:26px;height:26px;border-radius:99px;display:grid;place-items:center;background:var(--surface-2);color:var(--text-3);border:1px solid var(--border);flex:none}
+  .step-dot .ti{font-size:14px}
+  .step.done .step-dot{background:var(--primary-soft);color:var(--primary-ink);border-color:var(--primary)}
+  .step.warn .step-dot{background:var(--warning-bg);color:var(--warning);border-color:var(--warning)}
+  .step-body{padding:2px 0 16px}
+  .st-title{font-size:13.5px;font-weight:600}
+  .st-time{font-size:12px;color:var(--text-3);margin-top:1px}
+  .modal .quote{margin-top:4px}
+
+  /* ============ RESPONSIF ============ */
+  @media (max-width:1160px){
+    .hero{grid-template-columns:1fr;gap:30px}
+    .hero-right{flex-direction:row;width:100%;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+    .grid-2{grid-template-columns:1fr}
+    .kpi-strip{grid-template-columns:1fr 1fr}
+    .kpi + .kpi{border-left:none}
+    .kpi:nth-child(even){border-left:1px solid var(--border)}
+    .kpi:nth-child(n+3){border-top:1px solid var(--border)}
+  }
+  @media (max-width:1020px){
+    .sidebar{width:76px;padding:20px 12px}
+    .brand{justify-content:center;padding:0}
+    .brand-text,.nav-label,.nav-item span,.nav-badge,.side-profile{display:none}
+    .nav-item{justify-content:center;padding:12px}
+    .nav-item.active::before{left:-12px}
+    .content{padding:20px}
+    .topbar{padding:10px 18px}
+  }
+  @media (max-width:640px){
+    .kpi-strip{grid-template-columns:1fr}
+    .kpi{border-left:none !important}
+    .kpi + .kpi{border-top:1px solid var(--border)}
+    .t-due{display:none}
+    .user-name{display:none}
+    .v-divider{display:none}
+    .page-head{flex-direction:column;align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><i class="ti ti-route"></i></div>
+      <div class="brand-text"><strong>Milestone</strong><span>Monitoring Project Akhir</span></div>
+    </div>
+    <nav class="nav">
+      <p class="nav-label">Menu</p>
+      <button class="nav-item active" data-action="go" data-view="dashboard"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></button>
+      <button class="nav-item" data-action="go" data-view="target"><i class="ti ti-target-arrow"></i><span>Target Progress</span><em class="nav-badge" id="nav-b-target">0</em></button>
+      <button class="nav-item" data-action="go" data-view="laporan"><i class="ti ti-file-report"></i><span>Laporan</span><em class="nav-badge" id="nav-b-report">0</em></button>
+      <button class="nav-item" data-action="go" data-view="jadwal"><i class="ti ti-calendar"></i><span>Jadwal</span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-profile">
+        <div class="avatar">HW</div>
+        <div class="sp-info"><strong>Dr. Ir. Handoko W.</strong><span>Dosen Pembimbing</span></div>
+        <button class="icon-btn" data-action="open-message" aria-label="Kirim pesan ke dosen"><i class="ti ti-message"></i></button>
+      </div>
+      <button class="nav-item logout" data-action="logout"><i class="ti ti-logout"></i><span>Keluar</span></button>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <!-- ============ TOPBAR ============ -->
+    <header class="topbar">
+      <div class="search-wrap" id="search-wrap">
+        <div class="search">
+          <i class="ti ti-search"></i>
+          <input id="search-input" type="text" placeholder="Cari target atau laporan…" autocomplete="off">
+          <kbd>/</kbd>
+        </div>
+        <div class="search-panel" id="search-panel"></div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="theme-btn" data-action="theme" aria-label="Ganti tema"><i class="ti ti-moon"></i></button>
+        <div class="dd-anchor" id="notif-anchor">
+          <button class="icon-btn" id="notif-btn" aria-label="Notifikasi"><i class="ti ti-bell"></i><em class="dot-badge" id="notif-dot"></em></button>
+          <div class="dropdown" id="notif-panel"></div>
+        </div>
+        <div class="v-divider"></div>
+        <div class="user-chip">
+          <div class="avatar avatar-user">RP</div>
+          <div class="user-name"><strong>Raka Pramudya</strong><span>Mahasiswa · 2110512045</span></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ============ VIEW: DASHBOARD ============ -->
+      <section class="view active" id="view-dashboard">
+        <div class="page-head">
+          <div>
+            <h1 id="greeting">Selamat pagi, Raka</h1>
+            <p class="page-sub"><span id="today-label"></span> · <span class="mono" id="sem-label"></span></p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-outline" data-action="open-message"><i class="ti ti-message"></i>Pesan Dosen</button>
+            <button class="btn btn-accent" data-action="open-upload"><i class="ti ti-upload"></i>Unggah Laporan</button>
+          </div>
+        </div>
+
+        <div class="card hero">
+          <div class="hero-left">
+            <p class="eyebrow mono">Progress Keseluruhan — Pekan 14</p>
+            <h2 class="thesis">Rancang Bangun Sistem Monitoring Progres Project Akhir Berbasis Web</h2>
+            <p class="thesis-meta"><i class="ti ti-user-circle"></i>Dosen Pembimbing: <b>Dr. Ir. Handoko Wibowo, M.T.</b></p>
+            <div class="phase-block">
+              <div class="phase-bar" id="phase-bar"></div>
+              <div class="phase-legend" id="phase-legend"></div>
+            </div>
+          </div>
+          <div class="hero-right">
+            <div class="ring-wrap">
+              <svg id="ring" viewBox="0 0 200 200" aria-hidden="true"></svg>
+              <div class="ring-center">
+                <div class="ring-num"><span id="ring-num">0</span><em>%</em></div>
+                <div class="ring-cap">Progress Keseluruhan</div>
+              </div>
+            </div>
+            <div class="deadline-card">
+              <div class="tile tile-primary"><i class="ti ti-calendar-due"></i></div>
+              <div>
+                <p class="micro mono">Deadline Berikutnya</p>
+                <p class="deadline-title" id="cd-title">—</p>
+                <p class="mono countdown" id="cd-value">—</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card kpi-strip">
+          <div class="kpi">
+            <div class="kpi-label"><i class="ti ti-activity"></i>Progress Keseluruhan</div>
+            <div class="kpi-value"><span id="kpi-progress">0</span><small>%</small></div>
+            <div class="kpi-bar"><i id="kpi-progress-fill"></i></div>
+            <div class="kpi-sub" id="kpi-progress-sub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><i class="ti ti-target-arrow"></i>Target Selesai</div>
+            <div class="kpi-value"><span id="kpi-target-done">0</span><small id="kpi-target-total">/0</small></div>
+            <div class="kpi-sub" id="kpi-target-sub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><i class="ti ti-file-report"></i>Laporan Disetujui</div>
+            <div class="kpi-value"><span id="kpi-reports">0</span><small id="kpi-reports-total">/0</small></div>
+            <div class="kpi-sub" id="kpi-reports-sub">—</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label"><i class="ti ti-award"></i>Evaluasi Dosen</div>
+            <div class="kpi-value"><span class="badge badge-accent">SANGAT BAIK</span></div>
+            <div class="kpi-sub">Rata-rata dari 5 evaluasi bimbingan</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <h3>Target Berikutnya</h3>
+              <button class="btn btn-ghost btn-sm btn-link" data-action="go" data-view="target">Lihat Semua<i class="ti ti-arrow-right"></i></button>
+            </div>
+            <div class="card-body"><div class="stack" id="dash-targets"></div></div>
+          </div>
+          <div class="col">
+            <div class="card">
+              <div class="card-head"><h3>Aktivitas Terbaru</h3></div>
+              <div class="card-body flush"><div id="activity-list"></div></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Evaluasi Dosen</h3><span class="micro mono">Bimbingan · 2 hari lalu</span></div>
+              <div class="card-body">
+                <blockquote class="quote">“Arsitektur sistem sudah solid dan konsisten. Fokus berikutnya: lengkapi pengujian pada modul core dan rapikan penulisan Bab 4.”</blockquote>
+                <div class="eval-chips">
+                  <span class="badge badge-accent">Metodologi · SANGAT BAIK</span>
+                  <span class="badge badge-success">Analisis · BAIK</span>
+                  <span class="badge badge-warning">Bab 4 · PERLU PERBAIKAN</span>
+                </div>
+                <p class="eval-foot">— Dr. Ir. Handoko Wibowo, M.T.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: TARGET ============ -->
+      <section class="view" id="view-target">
+        <div class="page-head">
+          <div>
+            <h1>Target Progress</h1>
+            <p class="page-sub">Semua target project akhir — total bobot <b class="mono">100%</b></p>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-body" style="padding-top:18px">
+            <div class="stacked" id="target-summary"></div>
+            <div class="chips" id="target-chips" style="margin-top:16px"></div>
+          </div>
+        </div>
+        <div class="stack" id="target-list"></div>
+        <p class="foot-note"><i class="ti ti-info-circle"></i>Progress = bobot target selesai + setengah bobot target yang sedang berjalan.</p>
+      </section>
+
+      <!-- ============ VIEW: LAPORAN ============ -->
+      <section class="view" id="view-laporan">
+        <div class="page-head">
+          <div>
+            <h1>Laporan &amp; Review</h1>
+            <p class="page-sub" id="report-sub">—</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-accent" data-action="open-upload"><i class="ti ti-upload"></i>Unggah Laporan</button>
+          </div>
+        </div>
+        <div class="stack" id="report-list"></div>
+      </section>
+
+      <!-- ============ VIEW: JADWAL ============ -->
+      <section class="view" id="view-jadwal">
+        <div class="page-head">
+          <div>
+            <h1>Jadwal &amp; Milestone</h1>
+            <p class="page-sub">Linimasa penting semester ini — dihitung dari kalender akademik.</p>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>Linimasa Milestone</h3></div>
+            <div class="card-body"><div id="jadwal-list"></div></div>
+          </div>
+          <div class="col">
+            <div class="card">
+              <div class="card-head"><h3>Bimbingan Rutin</h3></div>
+              <div class="card-body">
+                <div class="side-info">
+                  <div class="tile tile-primary"><i class="ti ti-calendar-event"></i></div>
+                  <div class="side-info-txt">
+                    <strong>Setiap Kamis · 13.00–15.00</strong>
+                    <span>Lab Rekayasa Perangkat Lunak — Gedung TG Lt. 2</span>
+                  </div>
+                </div>
+                <div class="side-line"><span>Sesi berikutnya</span><b class="mono" id="next-thu">—</b></div>
+                <div style="margin-top:14px">
+                  <button class="btn btn-outline btn-sm" data-action="open-message"><i class="ti ti-message"></i>Kirim Pesan ke Dosen</button>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3>Menuju Sidang Akhir</h3></div>
+              <div class="center-col">
+                <p class="micro mono">SIDANG AKHIR · <span id="sidang-date">—</span></p>
+                <p class="mono sidang-cd" id="sidang-cd">—</p>
+                <p class="kpi-sub" style="margin-top:2px">Hitung mundur berjalan secara live</p>
+                <button class="btn btn-outline btn-sm" style="margin-top:10px" data-action="reminder"><i class="ti ti-bell"></i>Buat Pengingat</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="modal-root"></div>
+
+<script>
+/* ================= UTIL ================= */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const HARI = 864e5;
+const BULAN = ['Jan','Feb','Mar','Agu','Sep','Okt','Nov','Des','Apr','Mei','Jun','Jul'];
+// urutan bulan yang benar untuk fmtDate
+const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+const dayOff = (n, h=23, m=59) => { const d=new Date(); d.setDate(d.getDate()+n); d.setHours(h,m,0,0); return d; };
+const startDay = d => { const x=new Date(d); x.setHours(0,0,0,0); return x; };
+const dayDiff = d => Math.round((startDay(d)-startDay(new Date()))/HARI);
+const fmtDate = d => `${d.getDate()} ${BLN[d.getMonth()]}`;
+const fmtDateY = d => `${fmtDate(d)} ${d.getFullYear()}`;
+const relPast = d => { const n=dayDiff(d); return n===0?'Hari ini':n===-1?'Kemarin':n<0?`${-n} hari lalu`:n===1?'Besok':`dalam ${n} hari`; };
+const dueIn = d => { const n=dayDiff(d); return n===0?'Hari ini':n<0?`Terlewat ${-n} hr`:`H-${n}`; };
+const pad = n => String(n).padStart(2,'0');
+const fmtCountdown = t => {
+  let s = Math.max(0, Math.floor((t-new Date())/1000));
+  const d = Math.floor(s/86400); s -= d*86400;
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), ss = s%60;
+  return d>0 ? `${d} hari ${pad(h)}:${pad(m)}:${pad(ss)}` : `${pad(h)}:${pad(m)}:${pad(ss)}`;
+};
+const animateNum = (el, from, to, dur=900) => {
+  const t0 = performance.now();
+  const step = now => {
+    const p = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-p,3);
+    el.textContent = Math.round(from+(to-from)*e);
+    if (p<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+};
+const emptyHTML = (icon,text) => `<div class="empty"><i class="ti ${icon}"></i>${text}</div>`;
+
+/* ================= DATA ================= */
+const STATUS = {
+  COMPLETED:         {label:'Selesai',        cls:'success', tile:'success', icon:'ti-circle-check'},
+  IN_PROGRESS:       {label:'Berjalan',       cls:'primary', tile:'primary', icon:'ti-loader-2'},
+  NOT_STARTED:       {label:'Belum Mulai',    cls:'neutral', tile:'neutral', icon:'ti-circle-dotted'},
+  OVERDUE:           {label:'Terlambat',      cls:'danger',  tile:'danger',  icon:'ti-alert-triangle'},
+  SUBMITTED:         {label:'Menunggu Review',cls:'primary', tile:'primary', icon:'ti-clock'},
+  REVIEWED:          {label:'Sudah Direview', cls:'neutral', tile:'neutral', icon:'ti-eye'},
+  APPROVED:          {label:'Disetujui',      cls:'success', tile:'success', icon:'ti-circle-check'},
+  REVISION_REQUIRED: {label:'Perlu Revisi',   cls:'warning', tile:'warning', icon:'ti-alert-triangle'},
+};
+const JENIS = {
+  proposal:{label:'Proposal',        icon:'ti-file-text'},
+  bab:     {label:'Draft Bab',       icon:'ti-book-2'},
+  mingguan:{label:'Laporan Mingguan',icon:'ti-notebook'},
+  seminar: {label:'Seminar',         icon:'ti-presentation'},
+};
+const FASES = ['Proposal','Perancangan','Implementasi','Testing','Sidang'];
+
+const state = {
+  view:'dashboard', filter:'all',
+  targets:[
+    {id:'t1', fase:'Proposal',      judul:'Pengajuan Judul & Topik',            bobot:4,  status:'COMPLETED',   deadline:dayOff(-138), done:dayOff(-138)},
+    {id:'t2', fase:'Proposal',      judul:'Laporan Proposal — Bab 1–3',         bobot:14, status:'COMPLETED',   deadline:dayOff(-120), done:dayOff(-112)},
+    {id:'t3', fase:'Proposal',      judul:'Seminar Proposal',                   bobot:12, status:'COMPLETED',   deadline:dayOff(-100), done:dayOff(-95)},
+    {id:'t4', fase:'Perancangan',   judul:'Analisis & Perancangan Sistem',      bobot:15, status:'COMPLETED',   deadline:dayOff(-70),  done:dayOff(-64)},
+    {id:'t5', fase:'Implementasi',  judul:'Implementasi Sistem — Bab 4',        bobot:20, status:'COMPLETED',   deadline:dayOff(-40),  done:dayOff(-28)},
+    {id:'t6', fase:'Implementasi',  judul:'Implementasi Modul Core',            bobot:14, status:'IN_PROGRESS', deadline:dayOff(10)},
+    {id:'t7', fase:'Implementasi',  judul:'Implementasi Modul Pendukung',       bobot:8,  status:'IN_PROGRESS', deadline:dayOff(24)},
+    {id:'t8', fase:'Testing',       judul:'Testing & Evaluasi Sistem',          bobot:8,  status:'NOT_STARTED', deadline:dayOff(38)},
+    {id:'t9', fase:'Sidang',        judul:'Penyiapan Sidang & Slide Presentasi',bobot:5,  status:'NOT_STARTED', deadline:dayOff(59)},
+  ],
+  reports:[
+    {id:'r1', judul:'Laporan Proposal — Bab 1, 2, 3',        jenis:'proposal', uploaded:dayOff(-118), status:'APPROVED',          reviewed:dayOff(-112), catatan:'Struktur proposal rapi dan referensi relevan. Lanjutkan ke tahap analisis & perancangan.'},
+    {id:'r2', judul:'Makalah & Laporan Seminar Proposal',    jenis:'seminar',   uploaded:dayOff(-95),  status:'APPROVED',          reviewed:dayOff(-93),  catatan:'Presentasi runtut, pertanyaan penguji terjawab dengan baik.'},
+    {id:'r3', judul:'Laporan Analisis & Perancangan Sistem', jenis:'bab',       uploaded:dayOff(-62),  status:'APPROVED',          reviewed:dayOff(-57),  catatan:'Diagram UML sudah sesuai notasi. Normalisasi tabel log perlu dilanjutkan.'},
+    {id:'r4', judul:'Draft Bab 4 — Implementasi Modul Core', jenis:'bab',       uploaded:dayOff(-6),   status:'REVISION_REQUIRED', reviewed:dayOff(-2),   catatan:'Bagian pengujian unit belum lengkap. Tambahkan tabel uji coba dan rapikan penulisan potongan kode program.'},
+    {id:'r5', judul:'Laporan Mingguan — Sprint #7',           jenis:'mingguan',  uploaded:dayOff(-3),   status:'REVIEWED',          reviewed:dayOff(-1),   catatan:null},
+    {id:'r6', judul:'Laporan Mingguan — Sprint #8',           jenis:'mingguan',  uploaded:dayOff(0),    status:'SUBMITTED',         reviewed:null,         catatan:null},
+  ],
+  notifs:[
+    {id:'n1', icon:'ti-calendar-due',  tile:'warning', title:'Deadline makin dekat',  msg:'Implementasi Modul Core — tersisa 10 hari.',   t:dayOff(0),  unread:true,  view:'target'},
+    {id:'n2', icon:'ti-alert-triangle',tile:'warning', title:'Revisi diperlukan',     msg:'Draft Bab 4 dikembalikan dengan catatan dosen.', t:dayOff(-2), unread:true,  view:'laporan'},
+    {id:'n3', icon:'ti-calendar-event',tile:'info',    title:'Bimbingan rutin',       msg:'Kamis 13.00 — Lab Rekayasa Perangkat Lunak.',  t:dayOff(-5), unread:false, view:'jadwal'},
+    {id:'n4', icon:'ti-circle-check',  tile:'success', title:'Laporan disetujui',     msg:'Laporan Analisis & Perancangan disetujui.',    t:dayOff(-8), unread:false, view:'laporan'},
+  ],
+};
+const JADWAL = [
+  {judul:'Kick-off & Pengajuan Judul',  t:dayOff(-138), status:'done', desc:'Judul disetujui oleh kaprodi.'},
+  {judul:'Seminar Proposal',            t:dayOff(-95),  status:'done', desc:'Lulus dengan revisi minor.'},
+  {judul:'Deadline Implementasi Core',  t:dayOff(10),   status:'next', desc:'Terhubung ke target yang sedang berjalan.'},
+  {judul:'Deadline Testing & Evaluasi', t:dayOff(38),   status:'up'},
+  {judul:'Seminar Hasil',               t:dayOff(51),   status:'up',   desc:'Lab RPL 2 · penguji: 2 dosen.'},
+  {judul:'Sidang Akhir',                t:dayOff(66),   status:'up',   desc:'Pendaftaran maksimal H-7.'},
+];
+const SIDANG = dayOff(66, 8, 0);
+
+/* ================= KALKULASI ================= */
+function weights(){
+  let done=0, half=0;
+  state.targets.forEach(t=>{
+    if(t.status==='COMPLETED') done += t.bobot;
+    else if(t.status==='IN_PROGRESS') half += t.bobot/2;
+  });
+  return {done, half};
+}
+const calcProgress = () => Math.round(weights().done + weights().half);
+const nextDeadlineTarget = () => state.targets.filter(t=>t.status!=='COMPLETED').sort((a,b)=>a.deadline-b.deadline)[0];
+
+/* ================= RING PROGRESS ================= */
+let ticks = [], ringShown = 0, kpiShown = 0;
+function buildRing(){
+  const svg = $('#ring'), NS = 'http://www.w3.org/2000/svg';
+  for(let i=0;i<72;i++){
+    const a = (i/72)*Math.PI*2 - Math.PI/2;
+    const l = document.createElementNS(NS,'line');
+    l.setAttribute('x1', 100 + 80*Math.cos(a)); l.setAttribute('y1', 100 + 80*Math.sin(a));
+    l.setAttribute('x2', 100 + 91*Math.cos(a)); l.setAttribute('y2', 100 + 91*Math.sin(a));
+    l.setAttribute('class','tick');
+    svg.appendChild(l); ticks.push(l);
+  }
+}
+function updateRing(to){
+  const from = ringShown; ringShown = to;
+  const toFill = Math.round(to/100*72), fromFill = Math.round(from/100*72);
+  ticks.forEach((t,i)=>{
+    if(i < toFill){
+      if(i >= fromFill) setTimeout(()=>t.classList.add('on'), (i-fromFill)*14);
+      else t.classList.add('on');
+    } else t.classList.remove('on');
+    t.classList.toggle('edge', i === toFill-1 && to < 100 && i < toFill);
+  });
+  animateNum($('#ring-num'), from, to, 850);
+}
+
+/* ================= RENDER ================= */
+function targetRow(t, opts={}){
+  const st = STATUS[t.status];
+  let dueHtml;
+  if(t.status==='COMPLETED'){
+    dueHtml = `<div class="t-due"><div class="d1">${fmtDate(t.done)}</div><div class="d2" style="color:var(--success);font-weight:600">Selesai</div></div>`;
+  } else {
+    const soon = dayDiff(t.deadline) <= 14;
+    dueHtml = `<div class="t-due ${soon?'soon':''}"><div class="d1">${fmtDate(t.deadline)}</div><div class="d2">${dueIn(t.deadline)}</div></div>`;
+  }
+  let action = '';
+  if(t.status==='IN_PROGRESS') action = `<button class="btn btn-primary btn-sm" data-action="complete" data-id="${t.id}"><i class="ti ti-check"></i>Selesai</button>`;
+  else if(t.status==='NOT_STARTED') action = `<button class="btn btn-outline btn-sm" data-action="start" data-id="${t.id}"><i class="ti ti-player-play"></i>Mulai</button>`;
+  else action = `<span class="done-mark"><i class="ti ti-circle-check"></i></span>`;
+  const idx = opts.idx != null ? `<div class="t-idx mono">${String(opts.idx).padStart(2,'0')}</div>` : '';
+  const badge = opts.badge ? `<span class="badge badge-${st.cls}">${st.label}</span>` : '';
+  return `<div class="row-item" data-row="${t.id}">
+    ${idx}
+    <div class="tile tile-${st.tile}"><i class="ti ${st.icon}"></i></div>
+    <div class="t-main">
+      <div class="t-title">${t.judul}</div>
+      <div class="t-sub"><span class="tag">${t.fase}</span><span class="mono weight">+${t.bobot}% bobot</span></div>
+    </div>
+    ${dueHtml}${badge}
+    <div class="t-action">${action}</div>
+  </div>`;
+}
+function reportRow(r){
+  const st = STATUS[r.status], j = JENIS[r.jenis];
+  return `<div class="row-item" data-row="${r.id}" data-action="report" data-id="${r.id}" role="button" tabindex="0">
+    <div class="tile tile-${st.tile}"><i class="ti ${j.icon}"></i></div>
+    <div class="t-main">
+      <div class="t-title">${r.judul}</div>
+      <div class="t-sub"><span class="tag">${j.label}</span><span class="mono weight">${fmtDate(r.uploaded)} · ${relPast(r.uploaded)}</span></div>
+    </div>
+    <span class="badge badge-${st.cls}">${st.label}</span>
+    <i class="ti ti-chevron-right chev"></i>
+  </div>`;
+}
+
+function renderPhase(){
+  const rows = FASES.map(f=>{
+    const ts = state.targets.filter(t=>t.fase===f);
+    const total = ts.reduce((a,t)=>a+t.bobot,0);
+    const done  = ts.filter(t=>t.status==='COMPLETED').reduce((a,t)=>a+t.bobot,0);
+    const half  = ts.filter(t=>t.status==='IN_PROGRESS').reduce((a,t)=>a+t.bobot/2,0);
+    return {f,total,done,half};
+  });
+  $('#phase-bar').innerHTML = rows.map(r=>
+    (r.done ? `<div class="seg seg-done" style="width:${r.done}%"></div>`:'') +
+    (r.half ? `<div class="seg seg-half" style="width:${r.half}%"></div>`:'')
+  ).join('');
+  $('#phase-legend').innerHTML = rows.map(r=>{
+    const full = r.total>0 && r.done+r.half >= r.total;
+    const sw = full ? 'var(--primary)' : (r.done+r.half)>0 ? 'var(--seg-half)' : 'var(--track)';
+    const st = full ? 'selesai' : (r.done+r.half)>0 ? 'berjalan' : 'belum mulai';
+    return `<div class="pl-item"><i class="pl-swatch" style="background:${sw}"></i>${r.f}<b>${Math.round(r.done+r.half)}%</b><span class="pl-status">${st}</span></div>`;
+  }).join('');
+}
+function renderSummary(){
+  const {done, half} = weights();
+  $('#target-summary').innerHTML = `
+    <div class="stacked">
+      ${done ? `<div class="seg seg-done" style="width:${done}%"></div>`:''}
+      ${half ? `<div class="seg seg-half" style="width:${half}%"></div>`:''}
+    </div>
+    <div class="sum-legend">
+      <span><i style="background:var(--primary)"></i>Selesai <b>${Math.round(done)}%</b></span>
+      <span><i style="background:var(--seg-half)"></i>Berjalan (½ bobot) <b>${Math.round(half)}%</b></span>
+      <span><i style="background:var(--track)"></i>Belum <b>${Math.round(100-done-half)}%</b></span>
+    </div>`;
+}
+function renderChips(){
+  const c = k => state.targets.filter(t=>t.status===k).length;
+  const items = [['all','Semua',state.targets.length],['IN_PROGRESS','Berjalan',c('IN_PROGRESS')],['COMPLETED','Selesai',c('COMPLETED')],['NOT_STARTED','Belum Mulai',c('NOT_STARTED')]];
+  $('#target-chips').innerHTML = items.map(([k,l,n])=>
+    `<button class="chip ${state.filter===k?'active':''}" data-action="filter" data-filter="${k}">${l}<b>${n}</b></button>`).join('');
+}
+function renderTargets(){
+  const list = state.targets.filter(t=>state.filter==='all'||t.status===state.filter).sort((a,b)=>a.deadline-b.deadline);
+  $('#target-list').innerHTML = list.length
+    ? list.map((t,i)=>targetRow(t,{idx:i+1,badge:true})).join('')
+    : emptyHTML('ti-inbox','Tidak ada target pada filter ini.');
+}
+function renderDashTargets(){
+  const list = state.targets.filter(t=>t.status!=='COMPLETED').sort((a,b)=>a.deadline-b.deadline).slice(0,4);
+  $('#dash-targets').innerHTML = list.length ? list.map(t=>targetRow(t)).join('') : emptyHTML('ti-circle-check','Semua target sudah selesai. Kerja bagus.');
+}
+function renderReports(){
+  const rs = [...state.reports].sort((a,b)=>b.uploaded-a.uploaded);
+  $('#report-list').innerHTML = rs.map(reportRow).join('');
+  const ap = state.reports.filter(r=>r.status==='APPROVED').length;
+  const rv = state.reports.filter(r=>r.status==='REVISION_REQUIRED').length;
+  $('#report-sub').innerHTML = `${state.reports.length} laporan · <b>${ap}</b> disetujui · <b>${rv}</b> perlu revisi`;
+}
+function renderActivity(){
+  const ev = [];
+  state.reports.forEach(r=>{
+    ev.push({t:r.uploaded, dot:'primary', text:`<b>${r.judul}</b> diunggah`, time:relPast(r.uploaded)});
+    if(r.reviewed){
+      const m = r.status==='APPROVED' ? {dot:'success', text:`<b>${r.judul}</b> disetujui dosen`}
+        : r.status==='REVISION_REQUIRED' ? {dot:'warning', text:`<b>${r.judul}</b> perlu revisi`}
+        : {dot:'info', text:`<b>${r.judul}</b> sedang direview`};
+      ev.push({t:r.reviewed, ...m, time:relPast(r.reviewed)});
+    }
+  });
+  state.targets.filter(t=>t.done).forEach(t=> ev.push({t:t.done, dot:'success', text:`Target <b>${t.judul}</b> selesai`, time:relPast(t.done)}));
+  ev.sort((a,b)=>b.t-a.t);
+  $('#activity-list').innerHTML = ev.slice(0,6).map(e=>
+    `<div class="act"><i class="act-dot" style="background:var(--${e.dot})"></i><div class="act-body"><div class="act-title">${e.text}</div><div class="act-time">${e.time}</div></div></div>`).join('');
+}
+function renderJadwal(){
+  $('#jadwal-list').innerHTML = JADWAL.map(m=>{
+    const rel = m.status==='done' ? 'Selesai' : m.status==='next' ? `H-${dayDiff(m.t)}` : `dalam ${dayDiff(m.t)} hari`;
+    return `<div class="tl-item ${m.status}">
+      <div class="tl-dot"></div>
+      <div>
+        <div class="tl-date">${fmtDateY(m.t)} · ${rel}</div>
+        <div class="tl-title">${m.judul}</div>
+        ${m.desc ? `<div class="tl-desc">${m.desc}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderNotifs(){
+  const unread = state.notifs.some(n=>n.unread);
+  $('#notif-dot').style.display = unread ? 'block' : 'none';
+  $('#notif-panel').innerHTML = `
+    <div class="dd-head"><strong>Notifikasi</strong>${unread?'<button class="link-btn" data-action="read-all">Tandai dibaca</button>':''}</div>
+    <div class="dd-list">${state.notifs.map(n=>`
+      <div class="notif-item ${n.unread?'unread':''}" data-action="notif-open" data-id="${n.id}">
+        <div class="tile tile-${n.tile}" style="width:34px;height:34px"><i class="ti ${n.icon}"></i></div>
+        <div class="ni-body"><div class="ni-title">${n.title}</div><div class="ni-msg">${n.msg}</div><div class="ni-time">${relPast(n.t)}</div></div>
+        ${n.unread?'<i class="ni-dot"></i>':''}
+      </div>`).join('')}</div>`;
+}
+function updateDeadlineCard(){
+  const t = nextDeadlineTarget();
+  if(t){ $('#cd-title').textContent = t.judul; $('#cd-value').textContent = fmtCountdown(t.deadline); }
+  else { $('#cd-title').textContent = 'Semua target selesai'; $('#cd-value').textContent = '100%'; }
+}
+
+/* ================= RECALC PUSAT ================= */
+function recalcAll(){
+  const p = calcProgress();
+  const {done, half} = weights();
+  const doneCount = state.targets.filter(t=>t.status==='COMPLETED').length;
+  const approved  = state.reports.filter(r=>r.status==='APPROVED').length;
+  const revisi    = state.reports.filter(r=>r.status==='REVISION_REQUIRED').length;
+  const pending   = state.reports.filter(r=>r.status==='SUBMITTED'||r.status==='REVIEWED').length;
+  updateRing(p);
+  animateNum($('#kpi-progress'), kpiShown, p, 850); kpiShown = p;
+  $('#kpi-progress-fill').style.width = p+'%';
+  $('#kpi-progress-sub').textContent = `${Math.round(done)}% bobot selesai · ${Math.round(half)}% sedang berjalan`;
+  $('#kpi-target-done').textContent = doneCount;
+  $('#kpi-target-total').textContent = '/'+state.targets.length;
+  $('#kpi-target-sub').textContent = `${state.targets.length-doneCount} target tersisa · ${state.targets.filter(t=>t.status==='IN_PROGRESS').length} berjalan`;
+  $('#kpi-reports').textContent = approved;
+  $('#kpi-reports-total').textContent = '/'+state.reports.length;
+  $('#kpi-reports-sub').textContent = `${revisi} perlu revisi · ${pending} menunggu`;
+  $('#nav-b-target').textContent = state.targets.filter(t=>t.status==='IN_PROGRESS').length;
+  $('#nav-b-report').textContent = pending;
+  renderPhase(); renderSummary(); renderChips(); renderTargets();
+  renderDashTargets(); renderReports(); renderActivity(); updateDeadlineCard();
+}
+
+/* ================= AKSI TARGET ================= */
+function completeTarget(id){
+  const t = state.targets.find(x=>x.id===id); if(!t) return;
+  t.status='COMPLETED'; t.done=new Date();
+  toast('Target selesai', `"${t.judul}" ditandai selesai — progress diperbarui.`);
+  recalcAll();
+}
+function startTarget(id){
+  const t = state.targets.find(x=>x.id===id); if(!t) return;
+  t.status='IN_PROGRESS';
+  toast('Target dimulai', `"${t.judul}" kini berstatus berjalan.`, 'info');
+  recalcAll();
+}
+
+/* ================= TOAST & MODAL ================= */
+function toast(title, msg='', type='success'){
+  const ic  = {success:'ti-circle-check', info:'ti-info-circle', warning:'ti-alert-triangle'}[type];
+  const cls = {success:'tile-success', info:'tile-info', warning:'tile-warning'}[type];
+  const el = document.createElement('div'); el.className='toast';
+  el.innerHTML = `<div class="tile ${cls}"><i class="ti ${ic}"></i></div><div><div class="toast-title">${title}</div>${msg?`<div class="toast-msg">${msg}</div>`:''}</div>`;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),260); }, 3800);
+}
+function openModal(html){
+  $('#modal-root').innerHTML = `<div class="overlay" data-action="overlay"><div class="modal">${html}</div></div>`;
+  document.body.style.overflow='hidden';
+}
+function closeModal(){ $('#modal-root').innerHTML=''; document.body.style.overflow=''; }
+
+function openUpload(){
+  openModal(`
+    <div class="modal-head"><h3>Unggah Laporan</h3><button class="icon-btn" data-action="modal-close" aria-label="Tutup"><i class="ti ti-x"></i></button></div>
+    <p class="modal-sub">Laporan akan dikirim ke dosen pembimbing untuk direview.</p>
+    <div class="field" id="f-judul"><label>Judul laporan</label><input id="in-judul" placeholder="cth: Laporan Mingguan — Sprint #9"><span class="err">Judul wajib diisi.</span></div>
+    <div class="field"><label>Jenis laporan</label>
+      <select id="in-jenis">
+        <option value="mingguan">Laporan Mingguan</option>
+        <option value="bab">Draft Bab</option>
+        <option value="proposal">Proposal</option>
+        <option value="seminar">Seminar</option>
+      </select>
+    </div>
+    <div class="field"><label>Berkas (opsional)</label>
+      <input type="file" id="in-file" hidden>
+      <div class="file-row"><button class="btn btn-outline btn-sm" data-action="pick-file" type="button"><i class="ti ti-file-upload"></i>Pilih berkas</button><span class="mono file-name" id="file-name">Belum ada berkas</span></div>
+    </div>
+    <div class="field"><label>Catatan untuk dosen (opsional)</label><textarea id="in-catatan" placeholder="Ringkasan progres sejak laporan terakhir…"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" data-action="modal-close">Batal</button>
+      <button class="btn btn-accent" data-action="submit-upload"><i class="ti ti-send"></i>Kirim untuk Review</button>
+    </div>`);
+}
+function openMessage(){
+  openModal(`
+    <div class="modal-head"><h3>Kirim Pesan ke Dosen</h3><button class="icon-btn" data-action="modal-close" aria-label="Tutup"><i class="ti ti-x"></i></button></div>
+    <p class="modal-sub">Pesan akan dikirim ke <b>Dr. Ir. Handoko Wibowo, M.T.</b> — biasanya membalas dalam 1×24 jam.</p>
+    <div class="field" id="f-msg"><label>Pesan</label><textarea id="msg-text" placeholder="Tulis pesan…"></textarea><span class="err">Pesan tidak boleh kosong.</span></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" data-action="modal-close">Batal</button>
+      <button class="btn btn-primary" data-action="submit-message"><i class="ti ti-send"></i>Kirim Pesan</button>
+    </div>`);
+}
+function openLogout(){
+  openModal(`
+    <div class="modal-head"><h3>Keluar dari Milestone?</h3><button class="icon-btn" data-action="modal-close" aria-label="Tutup"><i class="ti ti-x"></i></button></div>
+    <p class="modal-sub">Sesi kamu akan diakhiri pada perangkat ini.</p>
+    <div class="modal-foot">
+      <button class="btn btn-outline" data-action="modal-close">Tetap Masuk</button>
+      <button class="btn btn-danger" data-action="logout-confirm"><i class="ti ti-logout"></i>Keluar</button>
+    </div>`);
+}
+function openReport(id){
+  const r = state.reports.find(x=>x.id===id); if(!r) return;
+  const st = STATUS[r.status], j = JENIS[r.jenis];
+  const stepDone  = (l,t) => `<div class="step done"><div class="step-rail"><div class="step-dot"><i class="ti ti-check"></i></div></div><div class="step-body"><div class="st-title">${l}</div><div class="st-time mono">${t}</div></div></div>`;
+  const stepPend  = (l,t) => `<div class="step"><div class="step-rail"><div class="step-dot"><i class="ti ti-clock"></i></div></div><div class="step-body"><div class="st-title">${l}</div><div class="st-time mono">${t}</div></div></div>`;
+  let step3 = stepPend('Menunggu keputusan','—');
+  if(r.status==='APPROVED') step3 = stepDone('Disetujui dosen', fmtDateY(r.reviewed));
+  else if(r.status==='REVISION_REQUIRED') step3 = `<div class="step warn"><div class="step-rail"><div class="step-dot"><i class="ti ti-alert-triangle"></i></div></div><div class="step-body"><div class="st-title">Perlu revisi</div><div class="st-time mono">Dikembalikan ${fmtDateY(r.reviewed)}</div></div></div>`;
+  openModal(`
+    <div class="modal-head"><h3>${r.judul}</h3><button class="icon-btn" data-action="modal-close" aria-label="Tutup"><i class="ti ti-x"></i></button></div>
+    <p class="modal-sub">${j.label} · diunggah ${fmtDateY(r.uploaded)} &nbsp;<span class="badge badge-${st.cls}">${st.label}</span></p>
+    <div class="steps">
+      ${stepDone('Diunggah', fmtDateY(r.uploaded))}
+      ${r.reviewed ? stepDone('Direview dosen', fmtDateY(r.reviewed)) : stepPend('Menunggu review','—')}
+      ${step3}
+    </div>
+    ${r.catatan ? `<p class="mini-label">Catatan dosen</p><blockquote class="quote">${r.catatan}</blockquote>` : ''}
+    <div class="modal-foot">
+      <button class="btn btn-outline" data-action="download" data-id="${r.id}"><i class="ti ti-download"></i>Unduh PDF</button>
+      ${r.status==='REVISION_REQUIRED' ? `<button class="btn btn-primary" data-action="send-revision" data-id="${r.id}"><i class="ti ti-upload"></i>Kirim Revisi</button>` : ''}
+    </div>`);
+}
+
+/* ================= NAVIGASI & PENCARIAN ================= */
+function go(v){
+  state.view = v;
+  $$('.view').forEach(s=>s.classList.toggle('active', s.id==='view-'+v));
+  $$('.nav-item[data-view]').forEach(n=>n.classList.toggle('active', n.dataset.view===v));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function closePanels(){ $('#notif-anchor').classList.remove('open'); $('#search-wrap').classList.remove('open'); }
+function doSearch(q){
+  q = q.trim().toLowerCase();
+  const wrap = $('#search-wrap'), panel = $('#search-panel');
+  if(!q){ wrap.classList.remove('open'); return; }
+  const tHit = state.targets.filter(t=>(t.judul+' '+t.fase).toLowerCase().includes(q));
+  const rHit = state.reports.filter(r=>(r.judul+' '+JENIS[r.jenis].label).toLowerCase().includes(q));
+  let html = '';
+  if(tHit.length) html += `<p class="sp-group">Target</p>` + tHit.slice(0,3).map(t=>
+    `<div class="sp-item" data-action="search-go" data-view="target" data-id="${t.id}"><i class="ti ti-target-arrow"></i><span class="sp-text">${t.judul}</span><span class="badge badge-${STATUS[t.status].cls}">${STATUS[t.status].label}</span></div>`).join('');
+  if(rHit.length) html += `<p class="sp-group">Laporan</p>` + rHit.slice(0,3).map(r=>
+    `<div class="sp-item" data-action="search-go" data-view="laporan" data-id="${r.id}"><i class="ti ti-file-report"></i><span class="sp-text">${r.judul}</span><span class="badge badge-${STATUS[r.status].cls}">${STATUS[r.status].label}</span></div>`).join('');
+  panel.innerHTML = html || `<div class="sp-empty">Tidak ada hasil untuk “${q}”.</div>`;
+  wrap.classList.add('open');
+}
+function highlightRow(id){
+  setTimeout(()=>{
+    const row = document.querySelector(`[data-row="${id}"]`);
+    if(row){ row.scrollIntoView({behavior:'smooth',block:'center'}); row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),2100); }
+  }, 90);
+}
+
+/* ================= TEMA ================= */
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  $('#theme-btn').innerHTML = `<i class="ti ti-${t==='dark'?'sun':'moon'}"></i>`;
+  try{ localStorage.setItem('ms-theme', t); }catch(e){}
+}
+
+/* ================= EVENT DELEGATION ================= */
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const a = el.dataset.action, id = el.dataset.id;
+  if(a==='go') go(el.dataset.view);
+  else if(a==='filter'){ state.filter = el.dataset.filter; renderChips(); renderTargets(); }
+  else if(a==='complete') completeTarget(id);
+  else if(a==='start') startTarget(id);
+  else if(a==='report') openReport(id);
+  else if(a==='open-upload') openUpload();
+  else if(a==='open-message') openMessage();
+  else if(a==='logout') openLogout();
+  else if(a==='theme') setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+  else if(a==='modal-close') closeModal();
+  else if(a==='overlay'){ if(e.target===el) closeModal(); }
+  else if(a==='pick-file') $('#in-file').click();
+  else if(a==='submit-upload'){
+    const judul = $('#in-judul').value.trim();
+    if(!judul){ $('#f-judul').classList.add('invalid'); $('#in-judul').focus(); return; }
+    state.reports.unshift({ id:'r'+Date.now(), judul, jenis:$('#in-jenis').value, uploaded:new Date(), status:'SUBMITTED', reviewed:null, catatan:$('#in-catatan').value.trim()||null });
+    closeModal(); recalcAll();
+    toast('Laporan terkirim', `"${judul}" menunggu review dosen.`);
+  }
+  else if(a==='submit-message'){
+    const v = $('#msg-text').value.trim();
+    if(!v){ $('#f-msg').classList.add('invalid'); $('#msg-text').focus(); return; }
+    closeModal();
+    toast('Pesan terkirim', 'Balasan biasanya datang dalam 1×24 jam.');
+  }
+  else if(a==='logout-confirm'){ closeModal(); toast('Mode demo', 'Sesi tidak benar-benar diakhiri — ini pratinjau UI.', 'info'); }
+  else if(a==='download'){ const r = state.reports.find(x=>x.id===id); toast('Mengunduh berkas', `"${r.judul}.pdf" — pratinjau demo.`, 'info'); }
+  else if(a==='send-revision'){
+    const r = state.reports.find(x=>x.id===id);
+    r.status='SUBMITTED'; r.reviewed=null;
+    closeModal(); recalcAll();
+    toast('Revisi terkirim', 'Laporan dikirim ulang untuk direview dosen.');
+  }
+  else if(a==='reminder') toast('Pengingat dibuat', 'Kamu akan dinotifikasi H-3 sebelum sidang akhir.');
+  else if(a==='read-all'){ state.notifs.forEach(n=>n.unread=false); renderNotifs(); }
+  else if(a==='notif-open'){
+    const n = state.notifs.find(x=>x.id===id);
+    n.unread=false; renderNotifs(); closePanels(); go(n.view);
+  }
+  else if(a==='search-go'){
+    const v = el.dataset.view;
+    if(v==='target') state.filter='all';
+    go(v); closePanels(); highlightRow(id);
+  }
+});
+document.addEventListener('change', e=>{
+  if(e.target.id==='in-file') $('#file-name').textContent = e.target.files[0]?.name || 'Belum ada berkas';
+});
+document.addEventListener('mousedown', e=>{
+  if(!e.target.closest('#notif-anchor') && !e.target.closest('#search-wrap')) closePanels();
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeModal(); closePanels(); $('#search-input').blur(); }
+  if(e.key==='/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); $('#search-input').focus(); }
+});
+ $('#notif-btn').addEventListener('click', e=>{
+  e.stopPropagation();
+  const an = $('#notif-anchor'); an.classList.toggle('open');
+  $('#search-wrap').classList.remove('open');
+});
+ $('#search-input').addEventListener('input', e=>doSearch(e.target.value));
+
+/* ================= INIT ================= */
+(function init(){
+  let saved='light'; try{ saved = localStorage.getItem('ms-theme')||'light'; }catch(e){}
+  setTheme(saved);
+  const h = new Date().getHours();
+  const sapa = h<4?'Selamat malam':h<11?'Selamat pagi':h<15?'Selamat siang':h<19?'Selamat sore':'Selamat malam';
+  $('#greeting').textContent = `${sapa}, Raka`;
+  $('#today-label').textContent = new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date());
+  const now = new Date(), y = now.getFullYear();
+  $('#sem-label').textContent = (now.getMonth()+1>=7) ? `Semester Ganjil ${y}/${y+1}` : `Semester Genap ${y-1}/${y}`;
+  const thu = new Date(); const add = (4-thu.getDay()+7)%7 || 7; thu.setDate(thu.getDate()+add);
+  $('#next-thu').textContent = fmtDate(thu);
+  $('#sidang-date').textContent = fmtDateY(SIDANG);
+  buildRing();
+  renderJadwal();
+  renderNotifs();
+  recalcAll();
+  setInterval(()=>{
+    const t = nextDeadlineTarget();
+    if(t) $('#cd-value').textContent = fmtCountdown(t.deadline);
+    $('#sidang-cd').textContent = fmtCountdown(SIDANG);
+  }, 1000);
+})();
+</script>
+</body>
+</html>
