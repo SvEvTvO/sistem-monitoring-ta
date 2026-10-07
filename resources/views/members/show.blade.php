@@ -6,6 +6,8 @@
         $userName  = $member->user->name;
         $initial   = strtoupper(substr($userName, 0, 1));
         $joinedAt  = $member->joined_at ? \Carbon\Carbon::parse($member->joined_at)->translatedFormat('d M Y') : null;
+        // Cek apakah anggota ini adalah sang Ketua Project
+        $isProjectLeaderAccount = $member->user->id === $member->project->project_leader_id;
 
         /* ---------- Rekap status laporan ---------- */
         $approvedCount = 0;
@@ -32,10 +34,22 @@
         </a>
         <div class="flex flex-wrap items-center gap-3">
             <h1 class="text-2xl font-black tracking-tight text-[#0B0F14] sm:text-3xl">Detail Anggota</h1>
-            <span class="inline-flex items-center gap-2 rounded-full border border-[#0B0F14]/10 bg-white px-3.5 py-1.5 text-xs font-extrabold text-[#0B0F14] shadow-sm">
-                <span class="h-2 w-2 rounded-full {{ $isLeader ? 'bg-[#D9FF3A]' : 'bg-[#0245EC]' }}"></span>
-                {{ $isLeader ? 'Ketua Divisi' : 'Anggota Divisi' }}
-            </span>
+
+            <!-- Lencana Tambahan Jika Dia Ketua Project -->
+            @if($isProjectLeaderAccount)
+                <span class="inline-flex items-center gap-2 rounded-full border border-[#0B0F14]/10 bg-[#0B0F14] px-3.5 py-1.5 text-xs font-extrabold text-white shadow-sm">
+                    <span class="h-2 w-2 rounded-full bg-[#D9FF3A]"></span>
+                    Ketua Project
+                </span>
+            @endif
+
+            <!-- Lencana Divisi -->
+            @if($isLeader || !$isProjectLeaderAccount)
+                <span class="inline-flex items-center gap-2 rounded-full border border-[#0B0F14]/10 bg-white px-3.5 py-1.5 text-xs font-extrabold text-[#0B0F14] shadow-sm">
+                    <span class="h-2 w-2 rounded-full {{ $isLeader ? 'bg-[#D9FF3A]' : 'bg-[#0245EC]' }}"></span>
+                    {{ $isLeader ? 'Ketua Divisi' : 'Anggota Divisi' }}
+                </span>
+            @endif
         </div>
         <p class="mt-1.5 text-sm font-medium text-[#0B0F14]/50">Profil dan riwayat kontribusi laporan mingguan anggota.</p>
     </header>
@@ -64,15 +78,25 @@
                 <!-- Identitas -->
                 <div class="min-w-0 flex-1">
                     <div class="mb-3 flex flex-wrap items-center justify-center gap-2.5 sm:justify-start">
+                        <!-- Nama Divisi -->
                         <span class="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-bold text-white backdrop-blur-sm">
                             <i class="ti ti-users-group text-sm text-[#D9FF3A]"></i>
                             {{ $member->division->name }}
                         </span>
+
+                        <!-- Lencana Utama: Ketua Project -->
+                        @if($isProjectLeaderAccount)
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#0B0F14] border border-white/20 px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-wide text-white shadow-sm">
+                                <i class="ti ti-crown text-sm text-[#D9FF3A]"></i> Ketua Project
+                            </span>
+                        @endif
+
+                        <!-- Lencana Peran Divisi -->
                         @if($isLeader)
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#D9FF3A] px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-wide text-[#0B0F14]">
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#D9FF3A] px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-wide text-[#0B0F14] shadow-sm">
                                 <i class="ti ti-star-filled text-sm"></i> Ketua Divisi
                             </span>
-                        @else
+                        @elseif(!$isProjectLeaderAccount)
                             <span class="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-bold text-white backdrop-blur-sm">
                                 <i class="ti ti-user text-sm"></i> Anggota
                             </span>

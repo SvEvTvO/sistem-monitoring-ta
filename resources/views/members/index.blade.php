@@ -39,13 +39,13 @@
             this.showRemoveModal = true;
         }
     }">
-    
+
         <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h1 class="text-3xl font-extrabold tracking-tight text-text-primary">Kelola Struktur Tim</h1>
                 <p class="text-text-secondary mt-1">Atur penempatan anggota, struktur divisi, dan peran masing-masing personal.</p>
             </div>
-            
+
             @if($isProjectLeader)
                 <button @click="showDivisionModal = true" class="px-6 py-3 bg-primary text-white text-sm font-bold rounded-2xl hover:bg-primary-dark transition-colors shadow-sm flex items-center">
                     <i class="ti ti-plus mr-2 text-lg"></i> Buat Divisi Baru
@@ -59,7 +59,7 @@
         @if($isProjectLeader)
             <div class="bg-white border border-neutral-border rounded-[24px] shadow-sm mb-8 overflow-hidden relative">
                 <div class="absolute left-0 top-0 bottom-0 w-2 bg-semantic-warning"></div>
-                
+
                 <div class="p-6 lg:p-8 pl-8 lg:pl-10">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                         <div class="flex items-center gap-4">
@@ -71,7 +71,7 @@
                                 <p class="text-sm text-text-secondary mt-0.5">Daftar anggota baru yang menunggu penempatan divisi.</p>
                             </div>
                         </div>
-                        
+
                         @if($unassignedUsers->count() > 0)
                             <div class="px-4 py-1.5 bg-semantic-warningBg text-semantic-warning font-bold rounded-xl text-sm border border-semantic-warning/30 shadow-sm flex items-center shrink-0">
                                 <i class="ti ti-clock animate-pulse mr-1.5 text-lg"></i> {{ $unassignedUsers->count() }} Menunggu
@@ -84,7 +84,7 @@
                             @foreach($unassignedUsers as $unassigned)
                                 <div class="bg-white border border-semantic-warning/30 p-4 rounded-2xl flex flex-col gap-3 relative hover:shadow-md transition-shadow group">
                                     <div class="absolute inset-0 opacity-[0.02] rounded-2xl pointer-events-none" style="background-image: repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%); background-size: 10px 10px;"></div>
-                                    
+
                                     <div class="flex items-center gap-3 z-10">
                                         <div class="w-10 h-10 rounded-full bg-semantic-warningBg text-semantic-warning border border-semantic-warning/30 flex items-center justify-center font-bold text-sm shadow-sm shrink-0 group-hover:scale-105 transition-transform">
                                             {{ substr($unassigned->name, 0, 1) }}
@@ -94,7 +94,7 @@
                                             <p class="text-[10px] font-medium text-text-secondary truncate" title="{{ $unassigned->email }}">{{ $unassigned->email }}</p>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="z-10 mt-1 pt-3 border-t border-dashed border-semantic-warning/40 flex items-center justify-between">
                                         <span class="text-[10px] font-extrabold text-semantic-warning uppercase tracking-wider">
                                             Status: Unassigned
@@ -143,7 +143,7 @@
                 <div class="bg-white border border-neutral-border rounded-[24px] shadow-sm overflow-hidden min-h-[400px]">
                     @foreach($divisions as $division)
                         <div x-show="activeTab === {{ $division->id }}" x-cloak x-transition.opacity.duration.300ms class="h-full flex flex-col">
-                            
+
                             <div class="p-6 lg:px-8 border-b border-neutral-border bg-neutral-surfaceSecondary/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
                                     <h3 class="text-2xl font-extrabold text-text-primary">{{ $division->name }}</h3>
@@ -151,7 +151,7 @@
                                         <i class="ti ti-users mr-1"></i> Total {{ $division->members->count() }} Anggota
                                     </p>
                                 </div>
-                                
+
                                 @if($isProjectLeader && $unassignedUsers->count() > 0)
                                     <button @click="showAssignModal = true; selectedDivisionId = {{ $division->id }}; selectedDivisionName = '{{ $division->name }}'" class="px-5 py-2.5 bg-primary/10 text-primary hover:bg-primary hover:text-white text-sm font-bold rounded-xl transition-colors shadow-sm flex items-center shrink-0">
                                         <i class="ti ti-user-plus mr-1.5 text-lg"></i> Tambah Anggota
@@ -165,9 +165,9 @@
                                         @php
                                             $isLeader = $division->leader_user_id == $member->user->id;
                                         @endphp
-                                        
+
                                         <div class="flex items-center justify-between gap-4 p-4 rounded-2xl border transition-all hover:shadow-md relative overflow-hidden {{ $isLeader ? 'border-primary/50 bg-primary/5 shadow-sm shadow-primary/10' : 'border-neutral-border bg-white hover:border-primary/30' }}">
-                                            
+
                                             @if($isLeader)
                                                 <div class="absolute left-0 top-0 bottom-0 w-2 bg-accent shadow-[0_0_12px_rgba(204,255,0,0.8)] z-0"></div>
                                             @endif
@@ -181,13 +181,22 @@
                                                         </div>
                                                     @endif
                                                 </div>
-                                                
+
                                                 <div class="overflow-hidden">
                                                     <p class="text-sm font-extrabold text-text-primary truncate" title="{{ $member->user->name }}">{{ $member->user->name }}</p>
                                                     <p class="text-xs font-medium text-text-secondary truncate mt-0.5" title="{{ $member->user->email }}">{{ $member->user->email }}</p>
-                                                    @if($isLeader)
-                                                        <span class="inline-block mt-1.5 px-2.5 py-0.5 rounded-md text-[9px] font-extrabold bg-primary text-accent uppercase tracking-wider border border-accent/30 shadow-sm">Ketua Divisi</span>
-                                                    @endif
+
+                                                    <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                                        <!-- Badge Khusus Ketua Project -->
+                                                        @if($member->user->id === $project->project_leader_id)
+                                                            <span class="inline-block px-2.5 py-0.5 rounded-md text-[9px] font-extrabold bg-[#0B0F14] text-white uppercase tracking-wider shadow-sm">Ketua Project</span>
+                                                        @endif
+
+                                                        <!-- Badge Khusus Ketua Divisi -->
+                                                        @if($isLeader)
+                                                            <span class="inline-block px-2.5 py-0.5 rounded-md text-[9px] font-extrabold bg-primary text-accent uppercase tracking-wider border border-accent/30 shadow-sm">Ketua Divisi</span>
+                                                        @endif
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -199,19 +208,19 @@
                                                         <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-lg bg-neutral-bg border border-neutral-border text-text-muted hover:text-accent hover:border-primary hover:bg-primary transition-colors" title="Jadikan Ketua Divisi">
                                                             <i class="ti ti-star text-base"></i>
                                                         </button>
-                                                        
+
                                                     </form>
                                                 @endif
-                                                
+
                                                 <!-- TOMBOL DETAIL BARU -->
                                                 <a href="{{ route('members.show', $member->id) }}" class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white transition-colors" title="Lihat Detail Profil & Laporan">
                                                     <i class="ti ti-eye text-base"></i>
                                                 </a>
 
                                                 <!-- TOMBOL HAPUS BARU: Trigger Alpine Modal -->
-                                                <button type="button" 
+                                                <button type="button"
                                                         @click="openRemoveModal({{ $member->id }}, '{{ addslashes($member->user->name) }}', {{ $isLeader ? 'true' : 'false' }}, {{ $division->id }}, '{{ addslashes($division->name) }}')"
-                                                        class="w-8 h-8 flex items-center justify-center rounded-lg {{ $isLeader ? 'bg-white border-semantic-danger/30 text-semantic-danger hover:bg-semantic-danger hover:text-white' : 'bg-neutral-bg border border-neutral-border text-text-muted hover:text-semantic-danger hover:border-semantic-danger hover:bg-semantic-dangerBg' }} transition-colors" 
+                                                        class="w-8 h-8 flex items-center justify-center rounded-lg {{ $isLeader ? 'bg-white border-semantic-danger/30 text-semantic-danger hover:bg-semantic-danger hover:text-white' : 'bg-neutral-bg border border-neutral-border text-text-muted hover:text-semantic-danger hover:border-semantic-danger hover:bg-semantic-dangerBg' }} transition-colors"
                                                         title="Keluarkan dari Divisi">
                                                     <i class="ti ti-user-minus text-base"></i>
                                                 </button>
@@ -250,10 +259,10 @@
         <!-- ========================================== -->
         <div x-show="showDivisionModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div x-show="showDivisionModal" x-transition.opacity class="fixed inset-0 bg-text-primary/40 backdrop-blur-sm transition-opacity"></div>
-            
+
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                
+
                 <!-- Pastikan overflow-visible agar dropdown pencarian tidak terpotong -->
                 <div x-show="showDivisionModal" x-transition.scale.origin.bottom class="inline-block align-bottom bg-white rounded-[24px] text-left overflow-visible shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-neutral-border relative">
                     <form action="{{ route('members.storeDivision') }}" method="POST">
@@ -266,7 +275,7 @@
                                 <i class="ti ti-x text-xl"></i>
                             </button>
                         </div>
-                        
+
                         <div class="p-6 space-y-6">
                             <!-- Input Nama Divisi -->
                             <div>
@@ -284,7 +293,7 @@
                             <!-- Input Pilih Ketua Divisi (Biarkan kode Alpine.js milikmu di bawah sini tidak berubah) -->
                             <div>
                                 <label class="block text-sm font-bold text-text-primary mb-2">Pilih Ketua Divisi <span class="text-semantic-danger">*</span></label>
-                                
+
                                 <div x-data="{
                                     isOpen: false,
                                     search: '',
@@ -302,7 +311,7 @@
                                         this.search = '';
                                     }
                                 }" class="relative" @click.outside="isOpen = false">
-                                    
+
                                     <!-- Input yang dikirim ke controller -->
                                     <input type="hidden" name="leader_user_id" x-model="selectedId" required>
 
@@ -317,7 +326,7 @@
 
                                     <!-- Dropdown List -->
                                     <div x-show="isOpen" x-transition.opacity.duration.200ms x-cloak class="absolute z-50 w-full mt-2 bg-white border border-neutral-border rounded-[20px] shadow-xl overflow-hidden flex flex-col left-0">
-                                        
+
                                         <div class="p-3 border-b border-neutral-border bg-neutral-surfaceSecondary/50">
                                             <div class="relative">
                                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -339,7 +348,7 @@
                                                     </div>
                                                 </li>
                                             </template>
-                                            
+
                                             <li x-show="filteredUsers.length === 0" class="px-4 py-8 text-center flex flex-col items-center">
                                                 <div class="w-12 h-12 bg-neutral-bg rounded-full flex items-center justify-center mb-3 border border-dashed border-neutral-border">
                                                     <i class="ti ti-user-x text-2xl text-text-muted opacity-50"></i>
@@ -352,7 +361,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="px-6 py-5 bg-neutral-bg flex justify-end gap-3 border-t border-neutral-border rounded-b-[24px]">
                             <button type="button" @click="showDivisionModal = false" class="px-6 py-2.5 bg-white border border-neutral-border text-text-secondary font-bold rounded-xl hover:bg-neutral-surface transition-colors text-sm shadow-sm">Batal</button>
                             <button type="submit" class="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-colors text-sm shadow-sm flex items-center group">
@@ -369,12 +378,12 @@
         <!-- ========================================== -->
         <div x-show="showAssignModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div x-show="showAssignModal" x-transition.opacity class="fixed inset-0 bg-text-primary/40 backdrop-blur-sm transition-opacity"></div>
-            
+
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                
+
                 <div x-show="showAssignModal" x-transition.scale.origin.bottom class="inline-block align-bottom bg-white rounded-[24px] text-left overflow-visible shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-neutral-border relative">
-                    
+
                     <!-- PERBAIKAN: x-data dipindahkan ke tag <form> agar mencakup seluruh elemen form -->
                     <form action="{{ route('members.assign') }}" method="POST"
                           x-data="{
@@ -398,12 +407,12 @@
                               removeUser(id) {
                                   this.selectedUsers = this.selectedUsers.filter(u => u.id !== id);
                               }
-                          }" 
+                          }"
                           x-init="$watch('showAssignModal', value => { if(!value) { selectedUsers = []; search = ''; isOpen = false; } })">
-                        
+
                         @csrf
                         <input type="hidden" name="division_id" x-model="selectedDivisionId">
-                        
+
                         <div class="px-6 pt-6 pb-4 border-b border-neutral-border flex justify-between items-center bg-neutral-surfaceSecondary/20 rounded-t-[24px]">
                             <h3 class="text-lg font-bold text-text-primary flex items-center" id="modal-title">
                                 <i class="ti ti-users-plus text-primary mr-2 text-xl"></i> Tambah Anggota Divisi
@@ -412,17 +421,17 @@
                                 <i class="ti ti-x text-xl"></i>
                             </button>
                         </div>
-                        
+
                         <div class="p-6">
                             <div class="mb-5 p-4 bg-primary/10 rounded-2xl border border-primary/20 text-sm">
                                 Memasukkan anggota ke Divisi: <strong class="text-primary text-base ml-1" x-text="selectedDivisionName"></strong>
                             </div>
-                            
+
                             <label class="block text-sm font-bold text-text-primary mb-2">Pilih Anggota (Bisa lebih dari 1)</label>
-                            
+
                             <!-- Komponen Alpine Multi-Select (x-data telah dihapus dari sini) -->
                             <div class="relative" @click.outside="isOpen = false">
-                                
+
                                 <!-- Render array input tersembunyi ke Laravel -->
                                 <template x-for="user in selectedUsers" :key="user.id">
                                     <input type="hidden" name="user_ids[]" x-model="user.id">
@@ -431,7 +440,7 @@
                                 <!-- Kotak Multi-Select & Input Pencarian -->
                                 <div class="w-full min-h-[52px] p-2 pr-10 rounded-2xl border border-neutral-border bg-white flex flex-wrap gap-2 items-center cursor-text focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 transition-all shadow-sm"
                                      @click="isOpen = true; $nextTick(() => $refs.searchInput.focus())">
-                                    
+
                                     <!-- Daftar Tag/Pills untuk User yang terpilih -->
                                     <template x-for="user in selectedUsers" :key="user.id">
                                         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary font-bold text-xs rounded-xl border border-primary/20 animate-fade-in">
@@ -443,12 +452,12 @@
                                     </template>
 
                                     <!-- Input Pencarian (Menyatu di dalam kotak) -->
-                                    <input type="text" x-model="search" x-ref="searchInput" 
-                                           class="flex-1 min-w-[140px] bg-transparent border-none outline-none focus:ring-0 text-sm p-1 text-text-primary placeholder-text-muted font-medium" 
+                                    <input type="text" x-model="search" x-ref="searchInput"
+                                           class="flex-1 min-w-[140px] bg-transparent border-none outline-none focus:ring-0 text-sm p-1 text-text-primary placeholder-text-muted font-medium"
                                            x-bind:placeholder="selectedUsers.length === 0 ? '-- Cari & Pilih Anggota --' : 'Tambah lagi...'"
                                            @keydown.backspace="if(search === '' && selectedUsers.length > 0) { selectedUsers.pop() }"
                                            @keydown.enter.prevent>
-                                           
+
                                     <i class="ti ti-chevron-down text-text-muted absolute right-4 top-1/2 -translate-y-1/2 transition-transform" :class="{'rotate-180': isOpen}"></i>
                                 </div>
 
@@ -466,7 +475,7 @@
                                                 </div>
                                             </li>
                                         </template>
-                                        
+
                                         <!-- Kondisi Kosong / Semua terpilih -->
                                         <li x-show="filteredUsers.length === 0" class="px-4 py-8 text-center flex flex-col items-center">
                                             <div class="w-12 h-12 bg-neutral-bg rounded-full flex items-center justify-center mb-3 border border-dashed border-neutral-border">
@@ -478,7 +487,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="px-6 py-5 bg-neutral-bg flex justify-end gap-3 border-t border-neutral-border rounded-b-[24px]">
                             <button type="button" @click="showAssignModal = false" class="px-6 py-2.5 bg-white border border-neutral-border text-text-secondary font-bold rounded-xl hover:bg-neutral-surface transition-colors text-sm shadow-sm">Batal</button>
                             <!-- Karena sekarang tombol ini berada di dalam form yang sama dengan x-data, ia bisa membaca length dari selectedUsers -->
@@ -496,22 +505,22 @@
         <!-- ========================================== -->
         <div x-show="showRemoveModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div x-show="showRemoveModal" x-transition.opacity class="fixed inset-0 bg-text-primary/60 backdrop-blur-sm transition-opacity"></div>
-            
+
             <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
                 <div x-show="showRemoveModal" x-transition.scale.origin.center class="relative bg-white rounded-[24px] text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-md w-full border border-semantic-danger/30">
-                    
+
                     <form method="POST" x-bind:action="'{{ url('members') }}/' + removeMemberId + '/remove'">
                         @csrf
                         @method('DELETE')
-                        
+
                         <div class="p-6 sm:p-8">
                             <!-- Header Ikon -->
                             <div class="w-16 h-16 bg-semantic-dangerBg text-semantic-danger rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-semantic-danger/20">
                                 <i class="ti ti-user-minus text-3xl"></i>
                             </div>
-                            
+
                             <h3 class="text-xl font-extrabold text-text-primary mb-2">Keluarkan Anggota</h3>
-                            
+
                             <!-- KONDISI 1: JIKA ANGGOTA BIASA -->
                             <div x-show="!removeMemberIsLeader">
                                 <p class="text-sm text-text-secondary leading-relaxed">
@@ -538,7 +547,7 @@
                                         </template>
                                     </select>
                                 </div>
-                                
+
                                 <!-- Jika Divisi Kosong (Hanya isi Ketua) -->
                                 <div x-show="availableReplacements.length === 0" class="p-4 bg-semantic-dangerBg/30 border border-semantic-danger/20 rounded-2xl text-semantic-danger text-sm font-bold text-center">
                                     <i class="ti ti-users-minus text-2xl block mb-2"></i>

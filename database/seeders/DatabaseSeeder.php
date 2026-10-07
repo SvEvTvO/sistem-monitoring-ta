@@ -27,6 +27,17 @@ class DatabaseSeeder extends Seeder
         $now = Carbon::now();
         $pass = Hash::make('password');
 
+
+        // 0. BUAT AKUN SUPER ADMIN
+        User::create([
+            'name' => 'Super Administrator',
+            'username' => 'admin',
+            'email' => 'admin@monitoring.com',
+            'password' => Hash::make('password'),
+            'is_admin' => true, // <-- Akun ini sakti!
+            'email_verified_at' => now(),
+        ]);
+
         // ==========================================
         // 1. DATA MASTER & LABEL EVALUASI
         // ==========================================
@@ -47,9 +58,9 @@ class DatabaseSeeder extends Seeder
         // ==========================================
         $users = [];
         $names = [
-            'Moch Miftahul Khoironi', 'Budi Santoso', 'Citra Kirana', 'Deni Pratama', 'Eka Saputri', 
-            'Fajar Hidayat', 'Gilang Ramadhan', 'Hani Amalia', 'Iqbal Tawakal', 'Joko Susilo', 
-            'Kiki Fatmala', 'Lina Marlina', 'Mira Lesmana', 'Nina Zatulini', 'Okan Kornelius', 
+            'Moch Miftahul Khoironi', 'Budi Santoso', 'Citra Kirana', 'Deni Pratama', 'Eka Saputri',
+            'Fajar Hidayat', 'Gilang Ramadhan', 'Hani Amalia', 'Iqbal Tawakal', 'Joko Susilo',
+            'Kiki Fatmala', 'Lina Marlina', 'Mira Lesmana', 'Nina Zatulini', 'Okan Kornelius',
             'Putra Siregar', 'Qori Akbar', 'Rara Lida', 'Sisil Priscillia', 'Tomi Soeharto'
         ];
 
@@ -57,7 +68,7 @@ class DatabaseSeeder extends Seeder
             $roleStr = '';
             if ($index == 0) $roleStr = ' (Ketua Project)';
             elseif ($index >= 1 && $index <= 5) $roleStr = ' (Ketua Divisi)';
-            
+
             $users[] = User::create([
                 'name' => $name . $roleStr,
                 'username' => strtolower(explode(' ', $name)[0]) . $index,
@@ -121,7 +132,7 @@ class DatabaseSeeder extends Seeder
                 'week_number' => $i,
                 'week_start' => $now->copy()->subWeeks(4 - $i)->startOfWeek(),
                 'week_end' => $now->copy()->subWeeks(4 - $i)->endOfWeek(),
-                'report_open_at' => $now->copy()->subWeeks(4 - $i)->startOfWeek(), 
+                'report_open_at' => $now->copy()->subWeeks(4 - $i)->startOfWeek(),
                 'report_close_at' => $now->copy()->subWeeks(4 - $i)->endOfWeek()->endOfDay(),
                 'revision_close_at' => $now->copy()->subWeeks(4 - $i)->endOfWeek()->addDays(4)->endOfDay(),
             ]);
@@ -142,11 +153,11 @@ class DatabaseSeeder extends Seeder
         for ($w = 0; $w < 3; $w++) { // Loop Minggu 1 - 3
             foreach ($divisionMembers as $divIndex => $members) {
                 $div = $divisions[$divIndex];
-                
+
                 // Laporan Personal Setiap Member (APPROVED)
                 foreach ($members as $member) {
                     $reviewerId = ($member->id == $users[0]->id) ? $users[1]->id : $div->leader_user_id;
-                    
+
                     Report::create([
                         'project_id' => $project->id, 'project_week_id' => $weeks[$w]->id,
                         'author_id' => $member->id, 'division_id' => $div->id,
@@ -155,7 +166,7 @@ class DatabaseSeeder extends Seeder
                         'next_plan' => "Melanjutkan ke tahap berikutnya.",
                         'status' => 'APPROVED',
                         'reviewed_by' => $reviewerId, 'decided_by' => $reviewerId,
-                        'evaluation_label_id' => $labels[rand(0, 1)]->id, 
+                        'evaluation_label_id' => $labels[rand(0, 1)]->id,
                         'review_comment' => "Bagus, pertahankan ritme kerjanya."
                     ]);
                 }
@@ -180,7 +191,7 @@ class DatabaseSeeder extends Seeder
         // 7. GENERATE LAPORAN MINGGU INI (W4 - Berjalan)
         // ==========================================
         // Beberapa anggota sudah mengumpulkan laporan (Status SUBMITTED)
-        $earlyBirds = [$users[6], $users[8], $users[13], $users[17]]; 
+        $earlyBirds = [$users[6], $users[8], $users[13], $users[17]];
         foreach ($earlyBirds as $bird) {
             $memberDiv = ProjectMember::where('user_id', $bird->id)->first();
             Report::create([
@@ -192,7 +203,7 @@ class DatabaseSeeder extends Seeder
                 'status' => 'SUBMITTED' // Menunggu di-review Ketua Divisi
             ]);
         }
-        
+
         // Satu Ketua Divisi mengumpulkan Laporan Divisi M4 (Status SUBMITTED)
         Report::create([
             'project_id' => $project->id, 'project_week_id' => $weeks[3]->id,

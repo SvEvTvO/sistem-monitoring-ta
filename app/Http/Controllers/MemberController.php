@@ -15,7 +15,7 @@ class MemberController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         $isProjectLeader = $user->ledProjects()->exists();
         $ledDivision = $user->ledDivisions()->first();
 
@@ -25,16 +25,26 @@ class MemberController extends Controller
 
         $project = $isProjectLeader ? $user->ledProjects()->first() : $ledDivision->project;
 
-        // FIX 1: Kolam Unassigned sekarang menampilkan SIAPA SAJA (termasuk Ketua Project) 
-        // asalkan dia belum masuk ke tabel project_members.
+        // FIX LOGIKA FATAL:
+        // Ketua Project HANYA boleh melihat siswa yang:
+        // 1. Berada di Rombel Kelas yang sama dengan Project ini.
+        // 2. Belum dimasukkan ke dalam project_members di project ini.
+        // 3. Bukan Admin.
         $unassignedUsers = collect();
         if ($isProjectLeader) {
-            $unassignedUsers = User::whereDoesntHave('projectMembers')->get();
+            $classId = $project->class_id; // Ambil ID Kelas dari project
+
+            $unassignedUsers = User::whereHas('classMemberships', function($q) use ($classId) {
+                $q->where('class_id', $classId); // Syarat 1: Harus di kelas yang sama!
+            })->whereDoesntHave('projectMembers', function($q) use ($project) {
+                $q->where('project_id', $project->id); // Syarat 2: Belum masuk ke project ini
+            })->where('is_admin', false) // Syarat 3: Bukan admin
+            ->get();
         }
 
         if ($isProjectLeader) {
             $divisions = ProjectDivision::where('project_id', $project->id)
-                                        ->with(['members.user']) 
+                                        ->with(['members.user'])
                                         ->get();
         } else {
             $divisions = ProjectDivision::where('id', $ledDivision->id)
@@ -52,9 +62,9 @@ class MemberController extends Controller
         $request->validate([
             'name' => 'required|string|max:100',
             'code' => 'required|string|max:10', // <-- Tambahan validasi kode
-            'leader_user_id' => 'required|exists:users,id' 
+            'leader_user_id' => 'required|exists:users,id'
         ]);
-        
+
         $user = Auth::user();
         $project = $user->ledProjects()->first();
 
@@ -83,7 +93,7 @@ class MemberController extends Controller
     public function setLeader(Request $request, ProjectDivision $division)
     {
         $request->validate(['user_id' => 'required|exists:users,id']);
-        
+
         $division->update(['leader_user_id' => $request->user_id]);
 
         return back()->with('success', 'Ketua Divisi berhasil ditetapkan.');
@@ -137,7 +147,7 @@ class MemberController extends Controller
             ], [
                 'new_leader_id.required' => 'Pilih ketua baru sebelum mengeluarkan ketua saat ini.'
             ]);
-            
+
             // Pindahkan takhta ketua ke orang baru
             $division->update(['leader_user_id' => $request->new_leader_id]);
         }
@@ -153,7 +163,7 @@ class MemberController extends Controller
     public function show(ProjectMember $member)
     {
         $user = Auth::user();
-        
+
         // Cek hak akses: Hanya Ketua Project atau Ketua Divisi terkait yang boleh melihat
         $isProjectLeader = $member->project->project_leader_id === $user->id;
         $isDivisionLeader = $user->ledDivisions()->where('id', $member->division_id)->exists();
@@ -165,8 +175,6 @@ class MemberController extends Controller
         $member->load(['user', 'division']);
 
         // Ambil riwayat laporan anggota ini khusus di divisi tersebut
-        // (Asumsi model Report memiliki kolom user_id dan division_id)
-        // Contoh jika nama kolom di database kamu adalah 'author_id'
         $reports = \App\Models\Report::where('author_id', $member->user_id)
                                      ->where('division_id', $member->division_id)
                                      ->orderBy('created_at', 'desc')
