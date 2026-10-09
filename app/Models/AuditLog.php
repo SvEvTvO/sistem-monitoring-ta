@@ -8,6 +8,7 @@ class AuditLog extends Model
 {
     protected $guarded = ['id'];
 
+    // Ubah format string JSON menjadi array otomatis
     protected function casts(): array
     {
         return [
@@ -16,5 +17,8 @@ class AuditLog extends Model
         ];
     }
 
-    public function user() { return $this->belongsTo(User::class); }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

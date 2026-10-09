@@ -163,6 +163,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::prefix('users')->name('users.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('index');
                 Route::post('/', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('store');
+                Route::get('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('show'); // <-- TAMBAHKAN INI
                 Route::put('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('update');
                 Route::delete('/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('destroy');
             });
