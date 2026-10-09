@@ -215,6 +215,7 @@ class ProjectSetupSeeder extends Seeder
             ['name' => 'Admin Monitoring',    'username' => 'admin_monitoring', 'email' => 'admin.monitoring@monitoring.com'],
         ];
 
+
         foreach ($admins as $a) {
             User::create([
                 'name'              => $a['name'],

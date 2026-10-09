@@ -14,25 +14,47 @@
     <!-- Tabler Icons CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 
-    <!-- Scripts -->
+    <!-- Scripts (Pastikan Alpine.js sudah ter-include di dalam app.js kamu) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased bg-neutral-bg text-text-primary overflow-hidden">
-    <!-- Wrapper Utama: Flex Row -->
-    <div class="flex h-screen w-full">
+    <!-- Wrapper Utama: Flex Row dengan Alpine.js untuk state sidebar -->
+    <div x-data="{ sidebarOpen: false }" class="flex h-screen w-full relative">
+
+        <!-- Overlay Gelap untuk Mobile (Hanya muncul saat sidebar terbuka) -->
+        <div x-show="sidebarOpen"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-900/80 z-20 lg:hidden"
+             @click="sidebarOpen = false"
+             aria-hidden="true"
+             style="display: none;"></div>
 
         <!-- SIDEBAR -->
-        <aside class="w-64 bg-neutral-surface border-r border-neutral-border flex flex-col shrink-0 shadow-sm z-20">
+        <aside
+            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+            class="fixed inset-y-0 left-0 w-64 bg-neutral-surface border-r border-neutral-border flex flex-col shrink-0 shadow-sm z-30 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0">
+
             <!-- Branding / Logo -->
-            <div class="h-16 flex items-center px-6 border-b border-neutral-border shrink-0">
-                <i class="ti ti-device-laptop text-2xl text-primary mr-2"></i>
-                <div class="flex flex-col">
-                    <span class="text-xl font-extrabold tracking-tight text-primary leading-tight">Monitoring TA</span>
-                    <!-- Label tambahan khusus admin -->
-                    @if(auth()->user()->is_admin)
-                        <span class="text-[10px] font-black uppercase text-semantic-warning tracking-widest">Admin Panel</span>
-                    @endif
+            <div class="h-16 flex items-center justify-between px-6 border-b border-neutral-border shrink-0">
+                <div class="flex items-center">
+                    <i class="ti ti-device-laptop text-2xl text-primary mr-2"></i>
+                    <div class="flex flex-col">
+                        <span class="text-xl font-extrabold tracking-tight text-primary leading-tight">Monitoring TA</span>
+                        <!-- Label tambahan khusus admin -->
+                        @if(auth()->user()->is_admin)
+                            <span class="text-[10px] font-black uppercase text-semantic-warning tracking-widest">Admin Panel</span>
+                        @endif
+                    </div>
                 </div>
+                <!-- Tombol Tutup Khusus Mobile (X) -->
+                <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <i class="ti ti-x text-2xl"></i>
+                </button>
             </div>
 
             <!-- Navigasi Menu -->
@@ -43,6 +65,8 @@
                     $user = auth()->user();
                     $isProjectLeader = $user->ledProjects()->exists();
                     $isDivisionLeader = $user->ledDivisions()->exists();
+
+
 
                     // hasProject menentukan apakah dia "Employed" atau "Unemployed"
                     $hasProject = $isProjectLeader || $isDivisionLeader || $user->projectMembers()->exists();
@@ -160,18 +184,26 @@
         </aside>
 
         <!-- AREA KONTEN KANAN -->
-        <div class="flex-1 flex flex-col w-full h-full relative">
+        <div class="flex-1 flex flex-col w-full h-full relative overflow-hidden">
 
             <!-- NAVBAR TOP -->
-            <header class="h-16 bg-primary border-b border-primary-dark flex items-center justify-between px-6 shrink-0 z-10 shadow-sm">
-                <div class="flex items-center text-white/80">
-                    <i class="ti ti-sparkles text-xl mr-2 text-accent"></i>
-                    <span class="text-sm font-medium">Selamat bekerja!</span>
+            <header class="h-16 bg-primary border-b border-primary-dark flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 shadow-sm">
+                <div class="flex items-center text-white/80 gap-3">
+                    <!-- Tombol Hamburger (Mobile) -->
+                    <button @click="sidebarOpen = true" type="button" class="lg:hidden text-white hover:text-accent focus:outline-none rounded-md p-1">
+                        <i class="ti ti-menu-2 text-2xl"></i>
+                    </button>
+
+                    <div class="hidden sm:flex items-center">
+                        <i class="ti ti-sparkles text-xl mr-2 text-accent"></i>
+                        <span class="text-sm font-medium">Selamat bekerja!</span>
+                    </div>
                 </div>
 
                 <!-- Area Kanan: User Info -->
                 <a href="{{ route('profile.edit') }}" class="flex items-center space-x-3 group hover:bg-white/10 p-1.5 pl-3 rounded-full transition-colors cursor-pointer" title="Kelola Profil Anda">
-                    <span class="text-sm font-bold text-white group-hover:text-white/90">{{ Auth::user()->name }}</span>
+                    <!-- Nama disembunyikan di HP, hanya muncul di sm ke atas -->
+                    <span class="hidden sm:block text-sm font-bold text-white group-hover:text-white/90">{{ Auth::user()->name }}</span>
                     <div class="w-9 h-9 rounded-full bg-accent text-text-primary flex items-center justify-center font-extrabold text-sm shadow-sm ring-2 ring-white/20 group-hover:scale-105 transition-transform">
                         {{ substr(Auth::user()->name, 0, 1) }}
                     </div>
@@ -179,7 +211,7 @@
             </header>
 
             <!-- KONTEN HALAMAN UTAMA -->
-            <main class="flex-1 overflow-y-auto p-6 lg:p-8 w-full bg-neutral-bg">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full bg-neutral-bg">
                 <div class="max-w-6xl mx-auto">
                     <!-- Flash Messages Umum -->
                     @if(session('success'))
