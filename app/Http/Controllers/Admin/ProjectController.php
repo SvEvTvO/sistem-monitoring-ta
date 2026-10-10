@@ -12,7 +12,9 @@ class ProjectController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Project::with(['leader', 'schoolClass.department', 'schoolClass.level']);
+        // [OPTIMASI TAHAP 1]: Tambahkan 'schoolClass.academicYear' untuk mencegah N+1
+        // jika file Blade menampilkan tahun ajaran di samping nama kelas.
+        $query = Project::with(['leader', 'schoolClass.department', 'schoolClass.level', 'schoolClass.academicYear']);
 
         if ($request->filled('search')) {
             $query->where('name', 'like', "%{$request->search}%");
@@ -20,9 +22,18 @@ class ProjectController extends Controller
 
         $projects = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
-        // Data untuk dropdown di Modal
-        $classes = SchoolClass::with(['department', 'level'])->orderBy('name', 'asc')->get();
-        $users = User::orderBy('name', 'asc')->get();
+        // [OPTIMASI TAHAP 2]: Tambahkan 'academicYear' ke relasi kelas untuk dropdown
+        $classes = SchoolClass::with(['department', 'level', 'academicYear'])
+                              ->orderBy('name', 'asc')
+                              ->get();
+
+        // [OPTIMASI FATAL TAHAP 3]: Menghemat RAM PHP secara drastis!
+        // Jangan gunakan 'User::get()' secara polos karena akan menarik SEMUA kolom.
+        // Cukup ambil 'id' dan 'name' saja, dan pastikan admin tidak masuk dalam daftar pilihan.
+        $users = User::select('id', 'name')
+                     ->where('is_admin', false)
+                     ->orderBy('name', 'asc')
+                     ->get();
 
         return view('admin.projects.index', compact('projects', 'classes', 'users'));
     }

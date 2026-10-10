@@ -21,33 +21,35 @@ class ReportService
      */
     public function createPersonalReport(User $user, ProjectWeek $week, array $data)
     {
-        // 1. Cek apakah waktu pelaporan sedang buka
         if (!$this->projectWeekService->isReportWindowOpen($week)) {
             throw new Exception("Waktu pelaporan mingguan sudah ditutup atau belum dibuka.");
         }
 
-        // 2. Cek aturan: 1 Laporan Pribadi per Minggu per User
-        $existingReport = Report::where('project_week_id', $week->id)
+        // [OPTIMASI TAHAP 1]: Gunakan exists() alih-alih first() untuk menghemat RAM
+        $hasReport = Report::where('project_week_id', $week->id)
             ->where('author_id', $user->id)
             ->where('type', 'PERSONAL')
-            ->first();
+            ->exists();
 
-        if ($existingReport) {
+        if ($hasReport) {
             throw new Exception("Kamu sudah membuat laporan personal untuk minggu ini.");
         }
 
-        // 3. Cari divisi user di project ini
-        $member = $user->projectMembers()->where('project_id', $week->project_id)->first();
-        if (!$member) {
+        // [OPTIMASI TAHAP 2]: Gunakan value('division_id') karena kita HANYA butuh ID divisinya,
+        // tidak perlu menarik seluruh model ProjectMember ke dalam memori.
+        $divisionId = $user->projectMembers()
+            ->where('project_id', $week->project_id)
+            ->value('division_id');
+
+        if (is_null($divisionId)) {
             throw new Exception("Kamu bukan anggota project ini.");
         }
 
-        // 4. Buat laporan
         return Report::create([
             'project_id' => $week->project_id,
             'project_week_id' => $week->id,
             'author_id' => $user->id,
-            'division_id' => $member->division_id,
+            'division_id' => $divisionId,
             'type' => 'PERSONAL',
             'title' => $data['title'],
             'work_done' => $data['work_done'],
@@ -56,10 +58,9 @@ class ReportService
             'solutions' => $data['solutions'] ?? null,
             'next_plan' => $data['next_plan'],
             'support_needed' => $data['support_needed'] ?? null,
-            'status' => 'SUBMITTED', // Aturan: Langsung tercatat sebagai laporan resmi
+            'status' => 'SUBMITTED', 
         ]);
     }
-
 
     /**
      * Membuat laporan divisi untuk ketua divisi
@@ -70,19 +71,21 @@ class ReportService
             throw new Exception("Waktu pelaporan mingguan sudah ditutup atau belum dibuka.");
         }
 
-        // Cari divisi yang dipimpin user di project ini
-        $ledDivision = $user->ledDivisions()->where('project_id', $week->project_id)->first();
-        if (!$ledDivision) {
+        // [OPTIMASI TAHAP 3]: Gunakan value('id') untuk sekadar memastikan kepemimpinan dan mengambil ID-nya
+        $divisionId = $user->ledDivisions()
+            ->where('project_id', $week->project_id)
+            ->value('id');
+
+        if (is_null($divisionId)) {
             throw new Exception("Kamu bukan ketua divisi di project ini.");
         }
 
-        // Cek aturan: 1 Laporan Divisi per Minggu[cite: 1, 3]
-        $existingReport = Report::where('project_week_id', $week->id)
-            ->where('division_id', $ledDivision->id)
+        $hasReport = Report::where('project_week_id', $week->id)
+            ->where('division_id', $divisionId)
             ->where('type', 'DIVISION')
-            ->first();
+            ->exists();
 
-        if ($existingReport) {
+        if ($hasReport) {
             throw new Exception("Divisimu sudah membuat laporan divisi untuk minggu ini.");
         }
 
@@ -90,7 +93,7 @@ class ReportService
             'project_id' => $week->project_id,
             'project_week_id' => $week->id,
             'author_id' => $user->id,
-            'division_id' => $ledDivision->id,
+            'division_id' => $divisionId,
             'type' => 'DIVISION',
             'title' => $data['title'],
             'work_done' => $data['work_done'],
@@ -99,7 +102,7 @@ class ReportService
             'solutions' => $data['solutions'] ?? null,
             'next_plan' => $data['next_plan'],
             'support_needed' => $data['support_needed'] ?? null,
-            'progress_percentage' => $data['progress_percentage'], // Wajib ada untuk Laporan Divisi[cite: 1, 3]
+            'progress_percentage' => $data['progress_percentage'], 
             'status' => 'SUBMITTED',
         ]);
     }

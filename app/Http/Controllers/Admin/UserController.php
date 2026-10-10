@@ -9,7 +9,7 @@ use App\Models\SchoolClass;
 use App\Models\Project;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB; // KUNCI: Untuk memasukkan user ke tabel class_memberships
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -20,38 +20,38 @@ class UserController extends Controller
             $classId = $request->class_id;
 
             if ($classId === 'unassigned') {
-                // MODE "BELUM PUNYA KELAS": project sengaja TIDAK diambil →
-                // partial menyembunyikan seluruh blok project & hanya menampilkan anggota tanpa kelas.
                 $project = null;
                 $isUnassigned = true;
-                $usersInClass = User::whereDoesntHave('classMemberships')
-                                    ->where('is_admin', false)
-                                    ->orderBy('name', 'asc')
-                                    ->get();
+                $userQuery = User::whereDoesntHave('classMemberships')
+                                 ->where('is_admin', false);
             } else {
                 $project = Project::where('class_id', $classId)
                                 ->with(['leader', 'divisions.members.user'])
                                 ->first();
                 $isUnassigned = false;
-                $usersInClass = User::whereHas('classMemberships', function ($q) use ($classId) {
+                $userQuery = User::whereHas('classMemberships', function ($q) use ($classId) {
                     $q->where('class_id', $classId);
-                })->where('is_admin', false)->orderBy('name', 'asc')->get();
+                })->where('is_admin', false);
             }
 
+            // [OPTIMASI TAHAP 1]: Pindahkan Filter Pencarian ke SQL Engine
+            // Menghemat RAM secara drastis dibanding mem-filter Collection di memori PHP
             if ($request->filled('search')) {
                 $search = $request->search;
-                $usersInClass = $usersInClass->filter(function($user) use ($search) {
-                    return stripos($user->name, $search) !== false
-                        || stripos($user->email, $search) !== false
-                        || stripos($user->username, $search) !== false;
+                $userQuery->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('username', 'like', "%{$search}%");
                 });
             }
+
+            $usersInClass = $userQuery->orderBy('name', 'asc')->get();
 
             return view('admin.users.partials.division-structure', compact('project', 'usersInClass', 'isUnassigned'))->render();
         }
 
-        // JIKA REQUEST BIASA — tidak berubah
-        $classes = SchoolClass::orderBy('name', 'asc')->get();
+        // [OPTIMASI TAHAP 2]: Tambahkan 'academicYear' untuk mencegah N+1 di dropdown Kelas
+        $classes = SchoolClass::with('academicYear')->orderBy('name', 'asc')->get();
         $hasUnassigned = User::whereDoesntHave('classMemberships')->where('is_admin', false)->exists();
 
         return view('admin.users.index', compact('classes', 'hasUnassigned'));
@@ -59,23 +59,20 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validasi input, termasuk class_id
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
-            'class_id' => 'nullable|exists:classes,id', // <-- Tambahan validasi Kelas
+            'class_id' => 'nullable|exists:classes,id',
         ]);
 
-        // 2. Buat User baru (pisahkan class_id agar tidak ikut tersimpan ke tabel users)
         $userData = collect($validated)->except('class_id')->toArray();
         $userData['password'] = Hash::make($userData['password']);
         $userData['email_verified_at'] = now();
 
         $user = User::create($userData);
 
-        // 3. JIKA Admin memilih kelas, otomatis daftarkan siswa tersebut ke class_memberships!
         if (!empty($validated['class_id'])) {
             DB::table('class_memberships')->insert([
                 'class_id'   => $validated['class_id'],
@@ -122,14 +119,14 @@ class UserController extends Controller
         }
     }
 
-    // Aksi: Lihat Detail Lengkap Pengguna (Khusus Admin)
     public function show(User $user)
     {
-        // Load relasi Rombel, Project, dan Divisi pengguna ini
         $user->load(['classMemberships.schoolClass.department', 'projectMembers.project', 'projectMembers.division']);
-        
-        // Tarik seluruh riwayat laporan yang pernah ditulis user ini
-        $reports = \App\Models\Report::where('author_id', $user->id)
+
+        // [OPTIMASI TAHAP 3]: Eager Load 'projectWeek'
+        // Mencegah N+1 saat file Blade mencoba merender "Minggu Ke-X"
+        $reports = \App\Models\Report::with('projectWeek')
+                                     ->where('author_id', $user->id)
                                      ->orderBy('created_at', 'desc')
                                      ->get();
 

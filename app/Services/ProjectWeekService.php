@@ -13,10 +13,12 @@ class ProjectWeekService
      */
     public function getCurrentWeek(Project $project)
     {
-        $now = Carbon::now();
+        // [OPTIMASI]: Simpan ke variabel agar fungsi toDateString() tidak dieksekusi 2 kali
+        $today = Carbon::now()->toDateString();
+
         return $project->weeks()
-            ->where('week_start', '<=', $now->toDateString())
-            ->where('week_end', '>=', $now->toDateString())
+            ->where('week_start', '<=', $today)
+            ->where('week_end', '>=', $today)
             ->first();
     }
 
@@ -25,8 +27,18 @@ class ProjectWeekService
      */
     public function isReportWindowOpen(ProjectWeek $week)
     {
+        // [FAIL-SAFE]: Pastikan tanggalnya ada
+        if (!$week->report_open_at || !$week->report_close_at) {
+            return false;
+        }
+
         $now = Carbon::now();
-        return $now->between($week->report_open_at, $week->report_close_at);
+
+        // [BUG FIX]: Bungkus dengan Carbon::parse() agar kebal dari error casting tipe data String vs DateTime
+        $openAt = Carbon::parse($week->report_open_at);
+        $closeAt = Carbon::parse($week->report_close_at);
+
+        return $now->between($openAt, $closeAt);
     }
 
     /**
@@ -34,7 +46,13 @@ class ProjectWeekService
      */
     public function isRevisionWindowOpen(ProjectWeek $week)
     {
+        if (!$week->revision_close_at) {
+            return false;
+        }
+
         $now = Carbon::now();
-        return $now->lessThanOrEqualTo($week->revision_close_at);
+        $revisionCloseAt = Carbon::parse($week->revision_close_at);
+
+        return $now->lessThanOrEqualTo($revisionCloseAt);
     }
 }

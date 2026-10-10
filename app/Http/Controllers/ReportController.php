@@ -8,7 +8,6 @@ use App\Services\ProjectWeekService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
 
 class ReportController extends Controller
 {
@@ -21,10 +20,14 @@ class ReportController extends Controller
         $this->projectWeekService = $projectWeekService;
     }
 
-    public function index(\Illuminate\Http\Request $request)
+    public function index(Request $request)
     {
-        $query = \App\Models\Report::where('author_id', \Illuminate\Support\Facades\Auth::id())
-            ->with(['projectWeek', 'division']);
+        $userId = Auth::id();
+
+        // [OPTIMASI TAHAP 1]: Tambahkan eager load 'evaluationLabel' dan 'reviewer'
+        // Mencegah N+1 saat memunculkan label nilai atau nama peninjau di baris tabel
+        $query = Report::where('author_id', $userId)
+            ->with(['projectWeek', 'division', 'evaluationLabel', 'reviewer']);
 
         // Filter Pencarian Judul
         if ($request->filled('search')) {
@@ -36,7 +39,7 @@ class ReportController extends Controller
             $query->where('type', $request->type);
         }
 
-        // Filter Status Laporan (Baru ditambahkan untuk tombol Tinjau Revisi)
+        // Filter Status Laporan
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -48,40 +51,40 @@ class ReportController extends Controller
         if ($request->filled('end_date')) {
             $query->whereDate('created_at', '<=', $request->end_date);
         }
-        
+
         $reports = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
-        $hasRevision = \App\Models\Report::where('author_id', \Illuminate\Support\Facades\Auth::id())
+        // [PERFORMA AMAN]: Penggunaan exists() di sini sudah SANGAT TEPAT.
+        // Berjalan murni di level SQL (SELECT EXISTS) tanpa memberatkan RAM PHP.
+        $hasRevision = Report::where('author_id', $userId)
             ->where('status', 'REVISION_REQUIRED')
             ->exists();
 
-        // JIKA REQUEST DARI AJAX: Kembalikan file partial table saja
         if ($request->ajax()) {
             return view('reports.partials.table', compact('reports'))->render();
         }
 
-        // JIKA BUKAN AJAX (Load Halaman Pertama): Kembalikan full view
         return view('reports.index', compact('reports', 'hasRevision'));
-    
     }
 
     public function create()
     {
         $user = Auth::user();
+
+        // [OPTIMASI]: Pastikan project di-load agar tidak meleset
         $membership = $user->projectMembers()->with('project')->first();
-        
+
         if (!$membership) {
             return redirect()->route('dashboard')->with('error', 'Kamu tidak tergabung dalam project aktif.');
         }
 
         $currentWeek = $this->projectWeekService->getCurrentWeek($membership->project);
 
-        // Validasi: Apakah saat ini berada pada periode Sabtu 00:01 - Minggu 23:59[cite: 1]
         if (!$currentWeek || !$this->projectWeekService->isReportWindowOpen($currentWeek)) {
             return redirect()->route('reports.index')->with('error', 'Waktu pelaporan mingguan belum dibuka atau sudah ditutup.');
         }
 
-        // Validasi: 1 Laporan per user per minggu[cite: 3]
+        // Menggunakan exists() adalah langkah performa yang sangat efisien
         $hasReport = Report::where('project_week_id', $currentWeek->id)
             ->where('author_id', $user->id)
             ->where('type', 'PERSONAL')
@@ -96,7 +99,6 @@ class ReportController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi input form[cite: 1]
         $validated = $request->validate([
             'project_week_id' => 'required|exists:project_weeks,id',
             'title' => 'required|string|max:200',
@@ -112,7 +114,6 @@ class ReportController extends Controller
         $user = Auth::user();
 
         try {
-            // Eksekusi pembuatan laporan melalui Service[cite: 3]
             $this->reportService->createPersonalReport($user, $week, $validated);
             return redirect()->route('reports.index')->with('success', 'Laporan berhasil dikirim dan berstatus SUBMITTED!');
         } catch (\Exception $e) {
@@ -124,7 +125,7 @@ class ReportController extends Controller
     {
         $user = Auth::user();
         $ledDivision = $user->ledDivisions()->with('project')->first();
-        
+
         if (!$ledDivision) {
             return redirect()->route('dashboard')->with('error', 'Kamu bukan ketua divisi aktif.');
         }
@@ -158,7 +159,7 @@ class ReportController extends Controller
             'solutions' => 'nullable|string',
             'next_plan' => 'required|string',
             'support_needed' => 'nullable|string',
-            'progress_percentage' => 'required|numeric|min:0|max:100', // Validasi progress 0 - 100%[cite: 1, 3]
+            'progress_percentage' => 'required|numeric|min:0|max:100', 
         ]);
 
         $week = ProjectWeek::findOrFail($validated['project_week_id']);
@@ -172,28 +173,22 @@ class ReportController extends Controller
         }
     }
 
-
-    // ==========================================
-    // FUNGSI UNTUK MELIHAT DETAIL LAPORAN
-    // ==========================================
     public function show(Report $report)
     {
-        // Muat relasi tabel agar datanya lengkap
+        // [PERFORMA AMAN]: Ini sudah SANGAT BAIK karena eksplisit mencegah N+1 di halaman detail!
         $report->load(['projectWeek', 'division', 'author', 'reviewer', 'evaluationLabel']);
         return view('reports.show', compact('report'));
     }
 
-    // ==========================================
-    // FUNGSI UNTUK HALAMAN EDIT LAPORAN
-    // ==========================================
     public function edit(Report $report)
     {
-        // Validasi: Hanya penulis laporan yang boleh mengedit
+        // [OPTIMASI TAHAP 2]: Amankan view 'edit' dari N+1 jika view menampilkan informasi minggu/divisi
+        $report->load(['projectWeek', 'division']);
+
         if ($report->author_id !== Auth::id()) {
             abort(403, 'Akses ditolak.');
         }
 
-        // Laporan yang sudah disetujui (APPROVED) tidak boleh diedit lagi
         if ($report->status === 'APPROVED') {
             return redirect()->route('reports.index')->with('error', 'Laporan yang sudah disetujui tidak dapat diedit.');
         }
@@ -201,9 +196,6 @@ class ReportController extends Controller
         return view('reports.edit', compact('report'));
     }
 
-    // ==========================================
-    // FUNGSI UNTUK MENYIMPAN PERUBAHAN LAPORAN
-    // ==========================================
     public function update(Request $request, Report $report)
     {
         if ($report->author_id !== Auth::id()) {
@@ -224,7 +216,6 @@ class ReportController extends Controller
             'support_needed' => 'nullable|string',
         ]);
 
-        // Jika laporan diedit karena disuruh revisi, otomatis ubah statusnya jadi SUBMITTED lagi
         $status = $report->status === 'REVISION_REQUIRED' ? 'SUBMITTED' : $report->status;
 
         $report->update(array_merge($validated, ['status' => $status]));

@@ -48,13 +48,21 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
+        // [OPTIMASI & BUG FIX]: Tangkap penolakan dari Database jika User memiliki relasi
+        try {
+            $user->delete(); // Coba hapus akunnya DULU
 
-        $user->delete();
+            // Jika lolos (berhasil dihapus), baru lakukan proses Logout
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+            return Redirect::to('/');
 
-        return Redirect::to('/');
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Jika database menolak (karena user punya Project, Divisi, atau Laporan)
+            // Kembalikan ke profil dan berikan pesan error yang manusiawi
+            return Redirect::back()->with('error', 'Akun tidak dapat dihapus karena masih terikat dengan data Project, Divisi, atau Laporan aktif.');
+        }
     }
 }
