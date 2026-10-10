@@ -44,33 +44,7 @@ class ReportReviewService
      */
     public function approve(Report $report, User $reviewer, array $data)
     {
-        if ($report->status !== 'REVIEWED') {
-            throw new Exception("Laporan harus dibaca (REVIEWED) terlebih dahulu.");
-        }
-
-        DB::transaction(function () use ($report, $reviewer, $data) {
-            $oldStatus = $report->status;
-            
-            $report->update([
-                'status' => 'APPROVED',
-                'evaluation_label_id' => $data['evaluation_label_id'],
-                'review_comment' => $data['review_comment'],
-                'decided_by' => $reviewer->id,
-                'decided_at' => now(),
-            ]);
-
-            ReportHistory::create([
-                'report_id' => $report->id,
-                'actor_id' => $reviewer->id,
-                'old_status' => $oldStatus,
-                'new_status' => 'APPROVED',
-                'revision_number' => $report->revision_count,
-                'evaluation_label_id' => $data['evaluation_label_id'],
-                'comment' => $data['review_comment'],
-            ]);
-        });
-
-        return $report;
+        return $this->processDecision($report, $reviewer, $data, 'APPROVED');
     }
 
     /**
@@ -78,15 +52,25 @@ class ReportReviewService
      */
     public function requestRevision(Report $report, User $reviewer, array $data)
     {
+        return $this->processDecision($report, $reviewer, $data, 'REVISION_REQUIRED');
+    }
+
+    /**
+     * [OPTIMASI DRY]: Fungsi Sentral (Private)
+     * Menyatukan logika yang berulang dari approve dan requestRevision agar kode lebih bersih
+     * dan mencegah terjadinya bug inkonsistensi di masa depan.
+     */
+    private function processDecision(Report $report, User $reviewer, array $data, string $newStatus)
+    {
         if ($report->status !== 'REVIEWED') {
             throw new Exception("Laporan harus dibaca (REVIEWED) terlebih dahulu.");
         }
 
-        DB::transaction(function () use ($report, $reviewer, $data) {
+        DB::transaction(function () use ($report, $reviewer, $data, $newStatus) {
             $oldStatus = $report->status;
-            
+
             $report->update([
-                'status' => 'REVISION_REQUIRED',
+                'status' => $newStatus,
                 'evaluation_label_id' => $data['evaluation_label_id'],
                 'review_comment' => $data['review_comment'],
                 'decided_by' => $reviewer->id,
@@ -97,7 +81,7 @@ class ReportReviewService
                 'report_id' => $report->id,
                 'actor_id' => $reviewer->id,
                 'old_status' => $oldStatus,
-                'new_status' => 'REVISION_REQUIRED',
+                'new_status' => $newStatus,
                 'revision_number' => $report->revision_count,
                 'evaluation_label_id' => $data['evaluation_label_id'],
                 'comment' => $data['review_comment'],

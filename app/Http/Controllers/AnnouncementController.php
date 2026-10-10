@@ -11,19 +11,21 @@ class AnnouncementController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $membership = $user->projectMembers()->with('project', 'division')->first();
+
+        // [OPTIMASI]: Eager load project & division untuk mencegah N+1
+        $membership = $user->projectMembers()->with(['project', 'division'])->first();
         if (!$membership) return redirect()->route('dashboard');
 
         $project = $membership->project;
         $divisionId = $membership->division_id;
-        
+
         $isProjectLeader = $project->project_leader_id === $user->id;
         $ledDivision = $user->ledDivisions()->where('project_id', $project->id)->first();
         $isDivisionLeader = $ledDivision ? true : false;
-        
+
         $canCreate = $isProjectLeader || $isDivisionLeader;
 
-        // Ambil pengumuman yang sesuai hak akses[cite: 28]
+        // [OPTIMASI]: with(['creator', 'division']) sudah sangat tepat untuk tabel!
         $query = Announcement::where('project_id', $project->id)
             ->where(function($q) use ($divisionId) {
                 $q->where('audience_type', 'ALL_PROJECT')
@@ -31,7 +33,7 @@ class AnnouncementController extends Controller
             })
             ->with(['creator', 'division']);
 
-        // Fitur Pencarian
+        // Fitur Pencarian (Aman & Optimal)
         if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
@@ -47,6 +49,8 @@ class AnnouncementController extends Controller
     public function create()
     {
         $user = Auth::user();
+
+        // [OPTIMASI]: Mencegah N+1 saat memanggil $membership->project di baris bawahnya
         $membership = $user->projectMembers()->with('project')->first();
         if (!$membership) return redirect()->route('dashboard');
 
@@ -64,12 +68,14 @@ class AnnouncementController extends Controller
     {
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
-            'title' => 'required|string|max:200',
-            'content' => 'required|string',
+            'title'      => 'required|string|max:200',
+            'content'    => 'required|string',
         ]);
 
         $user = Auth::user();
-        $project = \App\Models\Project::findOrFail($validated['project_id']);
+
+        // [OPTIMASI]: Menggunakan select untuk meringankan beban memory
+        $project = \App\Models\Project::select('id', 'project_leader_id')->findOrFail($validated['project_id']);
 
         $isProjectLeader = $project->project_leader_id === $user->id;
         $ledDivision = $user->ledDivisions()->where('project_id', $project->id)->first();
@@ -84,30 +90,32 @@ class AnnouncementController extends Controller
         }
 
         Announcement::create([
-            'project_id' => $validated['project_id'],
-            'title' => $validated['title'],
-            'content' => $validated['content'],
+            'project_id'    => $validated['project_id'],
+            'title'         => $validated['title'],
+            'content'       => $validated['content'],
             'audience_type' => $audienceType,
-            'division_id' => $divisionId,
-            'created_by' => $user->id,
-            'published_at' => now(),
+            'division_id'   => $divisionId,
+            'created_by'    => $user->id,
+            'published_at'  => now(),
         ]);
 
         return redirect()->route('announcements.index')->with('success', 'Pengumuman berhasil dipublikasikan.');
     }
 
-
-    // ... fungsi index, create, dan store sebelumnya ...
-
     public function show(Announcement $announcement)
     {
+        // [OPTIMASI FATAL N+1]: Route binding ($announcement) datang tanpa relasi.
+        // Wajib me-load project & division & creator agar blade/logika tidak memanggil query ulang!
+        $announcement->load(['project', 'division', 'creator']);
+
         $user = Auth::user();
         $membership = $user->projectMembers()->where('project_id', $announcement->project_id)->first();
         if (!$membership) abort(403);
 
+        // Karena sudah di-load di atas, baris di bawah ini TIDAK AKAN melakukan query ke DB lagi (Aman dari N+1)
         $isProjectLeader = $announcement->project->project_leader_id === $user->id;
         $ledDivision = $user->ledDivisions()->where('project_id', $announcement->project_id)->first();
-        
+
         // Cek visibilitas: Anggota divisi lain tidak boleh melihat pengumuman divisi khusus
         if (!$isProjectLeader && $announcement->audience_type === 'DIVISION') {
             if ($membership->division_id !== $announcement->division_id) {
@@ -128,10 +136,13 @@ class AnnouncementController extends Controller
 
     public function edit(Announcement $announcement)
     {
+        // [OPTIMASI FATAL N+1]: Wajib load project!
+        $announcement->load('project');
+
         $user = Auth::user();
         $isProjectLeader = $announcement->project->project_leader_id === $user->id;
         $ledDivision = $user->ledDivisions()->where('project_id', $announcement->project_id)->first();
-        
+
         $canEdit = false;
         if ($isProjectLeader) {
             $canEdit = true;
@@ -147,14 +158,17 @@ class AnnouncementController extends Controller
     public function update(Request $request, Announcement $announcement)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:200',
+            'title'   => 'required|string|max:200',
             'content' => 'required|string',
         ]);
+
+        // [OPTIMASI FATAL N+1]: Wajib load project agar pengecekan relasi cepat
+        $announcement->load('project');
 
         $user = Auth::user();
         $isProjectLeader = $announcement->project->project_leader_id === $user->id;
         $ledDivision = $user->ledDivisions()->where('project_id', $announcement->project_id)->first();
-        
+
         $canEdit = false;
         if ($isProjectLeader || ($ledDivision && $announcement->division_id === $ledDivision->id)) {
             $canEdit = true;

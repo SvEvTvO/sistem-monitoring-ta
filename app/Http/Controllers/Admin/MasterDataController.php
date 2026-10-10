@@ -13,13 +13,17 @@ class MasterDataController extends Controller
 {
     public function index()
     {
-        // Tarik semua data master secara efisien
-        $academicYears = AcademicYear::orderBy('start_date', 'desc')->get();
-        $departments = Department::orderBy('name', 'asc')->get();
-        $levels = Level::orderBy('sort_order', 'asc')->get();
+        // [OPTIMASI TAHAP 1]: Tambahkan withCount() untuk mencegah N+1 di halaman Blade
+        // Admin bisa langsung menampilkan jumlah kelas yang memakai Tahun Ajaran/Jurusan/Level tersebut
+        // Pastikan Model terkait memiliki fungsi relasi classes()
+        $academicYears = AcademicYear::withCount('classes')->orderBy('start_date', 'desc')->get();
+        $departments = Department::withCount('classes')->orderBy('name', 'asc')->get();
+        $levels = Level::withCount('classes')->orderBy('sort_order', 'asc')->get();
 
-        // Untuk kelas, kita load relasinya agar tidak terjadi N+1 Query Problem
+        // [OPTIMASI TAHAP 2]: Tambahkan penghitungan jumlah Siswa & Project per Rombel
+        // Pastikan Model SchoolClass memiliki relasi classMemberships() & projects()
         $classes = SchoolClass::with(['academicYear', 'department', 'level'])
+                              ->withCount(['classMemberships', 'projects'])
                               ->orderBy('name', 'asc')
                               ->get();
 
@@ -59,7 +63,11 @@ class MasterDataController extends Controller
 
     public function storeLevel(Request $request)
     {
-        $validated = $request->validate(['sort_order' => 'required|integer|min:1', 'name' => 'required|string|max:10']);
+        $validated = $request->validate([
+            'sort_order' => 'required|integer|min:1',
+            'name' => 'required|string|max:10'
+        ]);
+
         Level::create($validated);
         return back()->with('success', 'Data Kelas (10, 11, 12) baru berhasil ditambahkan.');
     }
@@ -67,7 +75,7 @@ class MasterDataController extends Controller
     public function storeClass(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:classes,name', // <-- UBAH JADI classes
+            'name' => 'required|string|max:50|unique:classes,name',
             'academic_year_id' => 'required|exists:academic_years,id',
             'department_id' => 'required|exists:departments,id',
             'level_id' => 'required|exists:levels,id',
@@ -75,26 +83,6 @@ class MasterDataController extends Controller
 
         SchoolClass::create($validated);
         return back()->with('success', 'Rombongan Belajar (Rombel) baru berhasil ditambahkan.');
-    }
-
-    public function updateLevel(Request $request, Level $level)
-    {
-        $validated = $request->validate(['sort_order' => 'required|integer|min:1', 'name' => 'required|string|max:10']);
-        $level->update($validated);
-        return back()->with('success', 'Data Kelas berhasil diperbarui.');
-    }
-
-    public function updateClass(Request $request, SchoolClass $schoolClass)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:classes,name,' . $schoolClass->id, // <-- UBAH JADI classes
-            'academic_year_id' => 'required|exists:academic_years,id',
-            'department_id' => 'required|exists:departments,id',
-            'level_id' => 'required|exists:levels,id',
-        ]);
-
-        $schoolClass->update($validated);
-        return back()->with('success', 'Rombongan Belajar (Rombel) berhasil diperbarui.');
     }
 
     // ==========================================
@@ -108,9 +96,10 @@ class MasterDataController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
         ]);
+        
         $validated['is_active'] = $request->has('is_active');
-
         $academicYear->update($validated);
+        
         return back()->with('success', 'Tahun Ajaran berhasil diperbarui.');
     }
 
@@ -120,10 +109,35 @@ class MasterDataController extends Controller
             'code' => 'required|string|max:10|unique:departments,code,' . $department->id,
             'name' => 'required|string|max:100',
         ]);
+        
         $validated['code'] = strtoupper($validated['code']);
-
         $department->update($validated);
+        
         return back()->with('success', 'Jurusan berhasil diperbarui.');
+    }
+
+    public function updateLevel(Request $request, Level $level)
+    {
+        $validated = $request->validate([
+            'sort_order' => 'required|integer|min:1', 
+            'name' => 'required|string|max:10'
+        ]);
+        
+        $level->update($validated);
+        return back()->with('success', 'Data Tingkat Kelas berhasil diperbarui.');
+    }
+
+    public function updateClass(Request $request, SchoolClass $schoolClass)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:50|unique:classes,name,' . $schoolClass->id,
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'department_id' => 'required|exists:departments,id',
+            'level_id' => 'required|exists:levels,id',
+        ]);
+
+        $schoolClass->update($validated);
+        return back()->with('success', 'Rombongan Belajar (Rombel) berhasil diperbarui.');
     }
 
     // ==========================================

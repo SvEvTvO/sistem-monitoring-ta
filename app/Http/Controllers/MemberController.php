@@ -16,40 +16,42 @@ class MemberController extends Controller
     {
         $user = Auth::user();
         
-        $isProjectLeader = $user->ledProjects()->exists();
-        $ledDivision = $user->ledDivisions()->first();
+        // [OPTIMASI TAHAP 1]: Ambil data project/divisi sekali saja untuk menghindari query berulang
+        $ledProject = $user->ledProjects()->first();
+        $isProjectLeader = $ledProject !== null;
+        
+        // Jika bukan ketua project, ambil data divisi beserta project-nya (Eager Load)
+        $ledDivision = null;
+        if (!$isProjectLeader) {
+            $ledDivision = $user->ledDivisions()->with('project')->first();
+        }
 
         if (!$isProjectLeader && !$ledDivision) {
             abort(403, 'Akses ditolak. Anda bukan Ketua Project atau Ketua Divisi.');
         }
 
-        $project = $isProjectLeader ? $user->ledProjects()->first() : $ledDivision->project;
+        $project = $isProjectLeader ? $ledProject : $ledDivision->project;
 
-        // FIX LOGIKA FATAL: 
-        // Ketua Project HANYA boleh melihat siswa yang:
-        // 1. Berada di Rombel Kelas yang sama dengan Project ini.
-        // 2. Belum dimasukkan ke dalam project_members di project ini.
-        // 3. Bukan Admin.
         $unassignedUsers = collect();
         if ($isProjectLeader) {
-            $classId = $project->class_id; // Ambil ID Kelas dari project
+            $classId = $project->class_id; 
             
             $unassignedUsers = User::whereHas('classMemberships', function($q) use ($classId) {
-                $q->where('class_id', $classId); // Syarat 1: Harus di kelas yang sama!
+                $q->where('class_id', $classId);
             })->whereDoesntHave('projectMembers', function($q) use ($project) {
-                $q->where('project_id', $project->id); // Syarat 2: Belum masuk ke project ini
-            })->where('is_admin', false) // Syarat 3: Bukan admin
+                $q->where('project_id', $project->id);
+            })->where('is_admin', false)
+            ->orderBy('name', 'asc') // [OPTIMASI]: Urutkan secara alfabet agar rapi
             ->get();
         }
 
+        // [OPTIMASI TAHAP 2]: Query divisi tidak perlu dibedakan strukturnya, hanya diubah filternya saja
+        $divisionsQuery = ProjectDivision::with(['members.user']);
+        
         if ($isProjectLeader) {
-            $divisions = ProjectDivision::where('project_id', $project->id)
-                                        ->with(['members.user']) 
-                                        ->get();
+            $divisions = $divisionsQuery->where('project_id', $project->id)->get();
         } else {
-            $divisions = ProjectDivision::where('id', $ledDivision->id)
-                                        ->with(['members.user'])
-                                        ->get();
+            $divisions = $divisionsQuery->where('id', $ledDivision->id)->get();
         }
 
         return view('members.index', compact('project', 'isProjectLeader', 'ledDivision', 'unassignedUsers', 'divisions'));
@@ -58,27 +60,26 @@ class MemberController extends Controller
     // Aksi: Buat Divisi Baru
     public function storeDivision(Request $request)
     {
-        // 1. Validasi: Nama divisi, KODE, & Ketua wajib diisi
         $request->validate([
             'name' => 'required|string|max:100',
-            'code' => 'required|string|max:10', // <-- Tambahan validasi kode
+            'code' => 'required|string|max:10', 
             'leader_user_id' => 'required|exists:users,id' 
         ]);
         
         $user = Auth::user();
-        $project = $user->ledProjects()->first();
+        
+        // [OPTIMASI]: Cukup gunakan select id untuk menghemat alokasi memori
+        $project = $user->ledProjects()->select('id')->first();
 
         if (!$project) abort(403);
 
-        // 2. Buat divisi beserta kodenya (diubah jadi huruf besar otomatis)
         $division = ProjectDivision::create([
             'project_id' => $project->id,
             'name' => $request->name,
-            'code' => strtoupper($request->code), // <-- Simpan kode divisi
+            'code' => strtoupper($request->code),
             'leader_user_id' => $request->leader_user_id
         ]);
 
-        // 3. Wajib: Masukkan ketua ke tabel anggota
         ProjectMember::create([
             'user_id' => $request->leader_user_id,
             'project_id' => $project->id,
@@ -102,7 +103,6 @@ class MemberController extends Controller
     // Aksi: Masukkan User ke Divisi (Mendukung Multiple Input)
     public function assignMember(Request $request)
     {
-        // Validasi diubah menjadi array (user_ids)
         $request->validate([
             'user_ids' => 'required|array|min:1',
             'user_ids.*' => 'exists:users,id',
@@ -111,17 +111,27 @@ class MemberController extends Controller
             'user_ids.required' => 'Pilih setidaknya satu anggota untuk dimasukkan.'
         ]);
 
-        $division = ProjectDivision::findOrFail($request->division_id);
+        // [OPTIMASI TAHAP 3]: Hindari select * jika hanya butuh project_id dan id
+        $division = ProjectDivision::select('id', 'project_id')->findOrFail($request->division_id);
 
-        // Looping untuk menyimpan setiap user yang dipilih
+        // [OPTIMASI TAHAP 4]: BULK INSERT! 
+        // Array dikumpulkan lalu dieksekusi dalam 1 kali query ke database. Jauh lebih cepat dari looping create().
+        $now = now();
+        $dataToInsert = [];
+        
         foreach ($request->user_ids as $userId) {
-            ProjectMember::create([
+            $dataToInsert[] = [
                 'user_id' => $userId,
                 'project_id' => $division->project_id,
                 'division_id' => $division->id,
-                'joined_at' => now(),
-            ]);
+                'joined_at' => $now->toDateString(),
+                'is_active' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
+        
+        ProjectMember::insert($dataToInsert); // 1 Query execution!
 
         return back()->with('success', count($request->user_ids) . ' anggota berhasil ditambahkan ke divisi.');
     }
@@ -129,6 +139,9 @@ class MemberController extends Controller
     // Aksi: Keluarkan User dari Divisi
     public function removeMember(Request $request, ProjectMember $member)
     {
+        // [OPTIMASI FATAL N+1]: Wajib load project dan division SEBELUM dicek isProjectLeader!
+        $member->load(['project', 'division']);
+
         $user = Auth::user();
         $isProjectLeader = $member->project->project_leader_id === $user->id;
         $isDivisionLeader = $user->ledDivisions()->where('id', $member->division_id)->exists();
@@ -137,34 +150,32 @@ class MemberController extends Controller
             abort(403, 'Anda tidak berhak mengeluarkan anggota ini.');
         }
 
-        $division = ProjectDivision::find($member->division_id);
+        // Karena sudah di-load di atas, kita tidak butuh 'ProjectDivision::find()' lagi.
+        $division = $member->division;
 
-        // Jika yang dikeluarkan adalah KETUA divisi
         if ($division && $division->leader_user_id == $member->user_id) {
-            // Wajibkan memilih ketua pengganti
             $request->validate([
                 'new_leader_id' => 'required|exists:users,id'
             ], [
                 'new_leader_id.required' => 'Pilih ketua baru sebelum mengeluarkan ketua saat ini.'
             ]);
             
-            // Pindahkan takhta ketua ke orang baru
             $division->update(['leader_user_id' => $request->new_leader_id]);
         }
 
-        // Setelah aman, hapus dari keanggotaan
         $member->delete();
 
         return back()->with('success', 'Anggota berhasil dikeluarkan dari divisi (Kembali menjadi Unassigned).');
     }
 
-
     // Aksi: Lihat Detail Anggota & Riwayat Laporannya
     public function show(ProjectMember $member)
     {
+        // [OPTIMASI FATAL N+1]: Pindahkan load ke ATAS sebelum dipanggil di bawahnya!
+        $member->load(['user', 'division', 'project']);
+
         $user = Auth::user();
         
-        // Cek hak akses: Hanya Ketua Project atau Ketua Divisi terkait yang boleh melihat
         $isProjectLeader = $member->project->project_leader_id === $user->id;
         $isDivisionLeader = $user->ledDivisions()->where('id', $member->division_id)->exists();
 
@@ -172,9 +183,7 @@ class MemberController extends Controller
             abort(403, 'Akses ditolak. Anda tidak berhak melihat detail anggota ini.');
         }
 
-        $member->load(['user', 'division']);
-
-        // Ambil riwayat laporan anggota ini khusus di divisi tersebut
+        // Pengambilan data laporan sudah cukup cepat karena menembak indeks (author_id & division_id)
         $reports = \App\Models\Report::where('author_id', $member->user_id)
                                      ->where('division_id', $member->division_id)
                                      ->orderBy('created_at', 'desc')

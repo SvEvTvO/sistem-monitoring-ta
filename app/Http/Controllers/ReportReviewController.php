@@ -20,13 +20,15 @@ class ReportReviewController extends Controller
 
     public function index(\Illuminate\Http\Request $request)
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
+        $user = Auth::user();
         
-        $divisionIds = $user->ledDivisions()->pluck('id');
-        $projectIds = $user->ledProjects()->pluck('id');
+        // [OPTIMASI TAHAP 1]: Konversi langsung ke Array untuk menghemat memory Collection
+        $divisionIds = $user->ledDivisions()->pluck('id')->toArray();
+        $projectIds = $user->ledProjects()->pluck('id')->toArray();
 
-        // Query dasar: Laporan Personal untuk Ketua Divisi, Laporan Divisi untuk Ketua Project
-        $query = \App\Models\Report::with(['author', 'division', 'projectWeek'])
+        // [OPTIMASI TAHAP 2]: Tambahkan 'project' dalam daftar Eager Loading
+        // untuk mencegah N+1 jika tampilan tabel membutuhkan data nama project
+        $query = Report::with(['author', 'division', 'projectWeek', 'project'])
             ->where(function($q) use ($divisionIds, $projectIds) {
                 $q->whereIn('division_id', $divisionIds)->where('type', 'PERSONAL')
                   ->orWhereIn('project_id', $projectIds)->where('type', 'DIVISION');
@@ -73,17 +75,21 @@ class ReportReviewController extends Controller
 
     public function show(Report $report)
     {
-        // Validasi hak akses menggunakan ReportPolicy yang sudah kita buat[cite: 3]
+        // [OPTIMASI FATAL N+1]: Wajib meload seluruh relasi SEBELUM masuk ke Gate / Policy
+        // agar proses verifikasi hak akses dan rendering view berjalan dalam 0 query tambahan!
+        $report->load(['author', 'division', 'projectWeek', 'project', 'reviewer', 'evaluationLabel']);
+
+        // Validasi hak akses menggunakan ReportPolicy
         Gate::authorize('review', $report);
 
         $user = Auth::user();
 
-        // Jika laporan masih SUBMITTED, otomatis ubah menjadi REVIEWED karena sudah dibaca[cite: 1, 3]
+        // Jika laporan masih SUBMITTED, otomatis ubah menjadi REVIEWED karena sudah dibaca
         if ($report->status === 'SUBMITTED') {
             $this->reviewService->markAsReviewed($report, $user);
         }
 
-        // Ambil data label evaluasi (Sangat Baik, Baik, dsb) untuk form keputusan[cite: 1, 3]
+        // Ambil data label evaluasi (Sangat Baik, Baik, dsb) untuk form keputusan
         $labels = ReportEvaluationLabel::where('is_active', true)->orderBy('sort_order')->get();
 
         return view('reviews.show', compact('report', 'labels'));
@@ -91,10 +97,13 @@ class ReportReviewController extends Controller
 
     public function decide(Request $request, Report $report)
     {
+        // [OPTIMASI]: Load relasi dasar yang umumnya dibutuhkan oleh Gate (Policy)
+        $report->load(['project', 'division']);
+
         // Validasi hak akses
         Gate::authorize('review', $report);
 
-        // Validasi input form: wajib menyertakan label dan komentar[cite: 1, 3]
+        // Validasi input form: wajib menyertakan label dan komentar
         $validated = $request->validate([
             'decision' => 'required|in:APPROVED,REVISION_REQUIRED',
             'evaluation_label_id' => 'required|exists:report_evaluation_labels,id',

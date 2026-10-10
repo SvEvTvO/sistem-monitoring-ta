@@ -13,4 +13,14 @@ class SchoolClass extends Model
     public function level() { return $this->belongsTo(Level::class); }
     public function academicYear() { return $this->belongsTo(AcademicYear::class); }
     public function projects() { return $this->hasMany(Project::class, 'class_id'); }
+
+    /**
+     * Relasi ke tabel class_memberships (Data anggota/siswa di kelas ini)
+     */
+    public function classMemberships()
+    {
+        return $this->hasMany(ClassMembership::class, 'class_id');
+    }
+
+
 }
